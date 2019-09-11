@@ -1,0 +1,61 @@
+'''
+    ConfigDao 类。
+'''
+
+import json
+import jsonschema
+
+from ..constant import *
+from ..exceptions import AppError
+
+
+
+class ConfigDao:
+    """
+    ConfigDao 类：
+    提供读取静态的配置文件的接口。
+    初始化时使用默认配置文件路径，可指定别的路径。
+
+    该类并不自带单例模式，且所有方法均不是静态。
+    因此，使用该类时，用户应先初始化该类，并全程使用同一个实例。
+
+    TODO: 支持设置并持久化配置的功能
+    TODO: 给别的类注释其使用方法
+    """
+    __slots__ = ('__conf',)
+
+    def __init__(self, config_filename=DEFAULT_CONFIG_FILE_PATH):
+        """
+        构造函数。初始化一个已经读入了配置文件的 ConfigDao 类。
+        :param config_filename: 配置文件的路径。默认为 DEFAULT_CONFIG_FILE_PATH。
+        """
+        with open(config_filename, 'r', encoding=UNIFIED_ENCODING) as f:
+            conf = json.load(f)
+
+        try:
+            # 验证配置文件格式是否正确
+            jsonschema.validate(conf, CONFIG_SCHEMA)
+        except jsonschema.ValidationError as err:
+            # 如果格式不正确，抛出用户友好的错误信息
+            raise AppError('配置文件格式错误。具体错误信息为：' + err.message)
+
+        self.__conf = conf
+
+    def __setitem__(self, key: str, value: str) -> None:
+        """
+        设置并持久化某个配置。
+        TODO: 目前不支持该功能
+
+        :param key:
+        :param value:
+        :return:
+        """
+        raise AppError('目前不支持该功能')
+
+    def __getitem__(self, item: str) -> str:
+        """
+        获取某个配置。
+        :param item: 配置的名字（key）。
+        :return: 配置内容（str）
+        """
+        return self.__conf[item]
