@@ -20,6 +20,11 @@ Transaction 使用 JSON 格式来保存。
 DEFAULT_TRANSACTION_FILE_PATH = 'transactions.json'
 
 """
+begin_end_date 函数的默认参数：天数之差
+"""
+DEFAULT_TIMEDELTA_DAYS = 1
+
+"""
 数据库 URL。默认使用 SQLite。
 """
 DATABASE_URL = 'sqlite:///:memory:'

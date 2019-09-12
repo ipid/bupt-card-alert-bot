@@ -19,7 +19,6 @@ class ConfigDao:
     该类并不自带单例模式，且所有方法均不是静态。
     因此，使用该类时，用户应先初始化该类，并全程使用同一个实例。
 
-    TODO: 支持设置并持久化配置的功能
     TODO: 给别的类注释其使用方法
     """
     __slots__ = ('__conf',)
@@ -40,17 +39,6 @@ class ConfigDao:
             raise AppError('配置文件格式错误。具体错误信息为：' + err.message)
 
         self.__conf = conf
-
-    def __setitem__(self, key: str, value: str) -> None:
-        """
-        设置并持久化某个配置。
-        TODO: 目前不支持该功能
-
-        :param key:
-        :param value:
-        :return:
-        """
-        raise AppError('目前不支持该功能')
 
     def __getitem__(self, item: str) -> str:
         """

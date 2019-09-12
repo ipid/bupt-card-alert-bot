@@ -7,28 +7,23 @@
 __all__ = ('EcardClient',)
 
 import re
+from typing import Optional, Tuple
 
 from bs4 import BeautifulSoup
-from typing import Optional, Tuple
 
 from ..exceptions import AppError
 from ..popo import SessionKeeper, EcardUserInfo, Transaction
-from ..util import default_begin_end_date
+from ..util import get_begin_end_date
 
 # 匹配 HTML 的标签（tag），及其周围的空白符；将多个标签视为一个，以方便替换
 RE_HTML_TAG = re.compile(r'(<[^>]*>(\s|&nbsp;?)*)+')
 
-# 网页上获取的属性，按顺序对应的 Transaction 的属性
-TRANSACTION_PROP = [
-    'operation_time',
-    'category',
-    'transaction_amount',
-    'balance',
-    None,
-    None,
-    'location',
-]
+# Transaction 的属性，按顺序对应的网页上获取的列
+# 如：Transaction 的第 4 属性，对应网页上的第 6 列（均从零计数）
+TRANSACTION_PROP_TO_RAW_PROP = (0, 1, 2, 3, 6)
 
+# 消费记录表格应该有 7 列
+TR_DATA_EXPECTED_LENGTH = 7
 
 class EcardClient:
     __slots__ = ('sess_keep', 'last_soup')
@@ -92,12 +87,11 @@ class EcardClient:
         return ecard_info
 
     def lookup_consume_info(self, with_sort_button: bool = False,
-                            start_end_date: Optional[Tuple[str, str]] = None) -> None:
+                            lookup_date: Optional[Tuple[str, str]] = None) -> None:
         """
         向查询消费记录的接口发送 POST 请求，以获取含消费记录的页面。
         :param with_sort_button: 该网站按下“箭头”按钮时会发出 POST 请求。如果为 True，将在 POST 同时模拟按下该按钮。
-        :param start_date: 网站上的参数“起始日期”，如 2000-01-01
-        :param end_date: 网站上的参数“截止日期”，如 2000-01-01
+        :param lookup_date: 网站上的参数“起始日期”和“截止日期”，形如 2000-01-01
         :return: None
         """
         form = self.__get_post_body_of_form()
@@ -110,10 +104,10 @@ class EcardClient:
             form['__EVENTTARGET'] = ''
             form['ctl00$ContentPlaceHolder1$btnSearch'] = '查  询'
 
-        if start_end_date is None:
-            start_end_date = default_begin_end_date()
-        form['ctl00$ContentPlaceHolder1$txtStartDate'] = start_end_date[0]
-        form['ctl00$ContentPlaceHolder1$txtEndDate'] = start_end_date[1]
+        if lookup_date is None:
+            lookup_date = get_begin_end_date()
+        form['ctl00$ContentPlaceHolder1$txtStartDate'] = lookup_date[0]
+        form['ctl00$ContentPlaceHolder1$txtEndDate'] = lookup_date[1]
         form['ctl00$ContentPlaceHolder1$rbtnType'] = '0'
 
         sess = self.sess_keep.sess
@@ -125,28 +119,32 @@ class EcardClient:
         self.last_soup = BeautifulSoup(resp.text, 'html.parser')
 
     def parse_consume_info(self):
-        info_table = self.last_soup.find(id='ContentPlaceHolder1_gridView')
+        form1 = self.last_soup.find(id='form1')
+        info_table = form1.find(id='ContentPlaceHolder1_gridView')
         if info_table is None:
             raise AppError('找不到存放消费记录的 <table>。')
+        if 'class="gvNoRecords"' in str(info_table):
+            # 弹出提示“未查询到记录！”
+            return []
 
         res = []
+        # 遍历存放消费记录的 <table> 的每一个 <tr>
         for tr in info_table.select('tr:not(.HeaderStyle)'):
             # 将多余的 HTML 标签替换为换行符，再将头尾换行符去掉，最后按行分割为字符串数组
             tr_data = RE_HTML_TAG.sub('\n', str(tr)).strip().split('\n')
             if tr_data == [''] or len(tr_data) == 0:
-                # 空行
+                # 空行则跳过
                 continue
 
-            if len(tr_data) != len(TRANSACTION_PROP):
-                raise AppError(f'消费记录的列数为 {len(tr_data)}，与预设值 {len(TRANSACTION_PROP)} 不同，可能是解析代码出错。')
+            if len(tr_data) != TR_DATA_EXPECTED_LENGTH:
+                raise AppError(f'消费记录的列数为 {len(tr_data)}，'
+                               f'与预设值 {TR_DATA_EXPECTED_LENGTH} 不同，可能是解析代码出错。')
 
             # 将原始数据存入 Transaction 对象，以方便使用
-            transaction = Transaction()
-
-            # 根据顺序 - 属性名的对应关系来存入
-            for raw_data, prop_name in zip(tr_data, TRANSACTION_PROP):
-                if prop_name is not None:
-                    setattr(transaction, prop_name, raw_data)
+            transaction = Transaction._make(
+                # 按照对应关系来存入属性
+                tr_data[x] for x in TRANSACTION_PROP_TO_RAW_PROP
+            )
 
             res.append(transaction)
 

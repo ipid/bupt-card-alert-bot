@@ -1,6 +1,7 @@
 """
-    提供 StateDao 类。
+提供 StateDao 类。
 """
+__all__ = ('state_dao',)
 
 import json
 
@@ -8,31 +9,32 @@ from ..constant import *
 from ..popo import State
 
 
-class StateDao:
+class StateDao(State):
     """
-        该类提供方便的储存、读取 State 类的接口，以方便本应用崩溃或升级时取回必要的状态信息。
-        详细介绍请参考 State 类。
+    修改本类的属性时，修改的内容将会自动持久化。
     """
 
     __slots__ = ('__path',)
 
-    def __init__(self, file_path=DEFAULT_STATE_FILE_PATH):
-        self.__path = file_path
+    def __init__(self):
+        self.__path = DEFAULT_STATE_FILE_PATH
 
-    def load_state(self) -> State:
-        """
-        从数据库获取新的 State 对象。
-        :return: State 对象
-        """
-        with open(self.__path, 'r', encoding=UNIFIED_ENCODING) as f:
-            content = json.load(f)
-        return State.from_json(content)
+    def set_file_path(self, path: str) -> None:
+        self.__path = path
 
-    def store_state(self, state: State) -> None:
+    def get_file_path(self) -> str:
+        return self.__path
+
+    def __setitem__(self, key: str, value: str) -> None:
+
+
+    def __getitem__(self, item: str) -> str:
         """
-        将 state 对象持久化储存到数据库中。
-        :param state: State 对象
-        :return: None
+        获取某个配置。
+        :param item: 配置的名字（key）。
+        :return: 配置内容（str）
         """
-        with open(self.__path, 'w', encoding=UNIFIED_ENCODING) as f:
-            json.dump(state.to_json(), f)
+        return self.__conf[item]
+
+
+state_dao = StateDao()

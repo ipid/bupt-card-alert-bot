@@ -22,8 +22,8 @@ ecc.goto_personal_info_page()
 print(ecc.parse_personal_info())
 
 ecc.goto_consume_info_page()
-
 ecc.lookup_consume_info(
-    with_sort_button=not ecc.is_sort_button_desc()
+    lookup_date=get_begin_end_date(3),
+    with_sort_button=not ecc.is_sort_button_desc(),
 )
-print()
+print(ecc.parse_consume_info())

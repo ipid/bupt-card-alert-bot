@@ -3,7 +3,7 @@
 """
 
 import json
-from typing import Set
+from typing import Iterable, Set
 
 from ..constant import *
 from ..popo import Transaction
@@ -19,10 +19,10 @@ class TransactionDao:
         with open(self.__path, 'r', encoding=UNIFIED_ENCODING) as f:
             content = json.load(f)
 
-        return set(content)
+        return set(Transaction._make(x) for x in content)
 
-    def store_transaction_set(self, trans: Set[Transaction]) -> None:
+    def store_transactions(self, trans: Iterable[Transaction]) -> None:
         trans_list = list(trans)
 
-        with open(self.__path, 'r', encoding=UNIFIED_ENCODING) as f:
+        with open(self.__path, 'w', encoding=UNIFIED_ENCODING) as f:
             json.dump(trans_list, f)

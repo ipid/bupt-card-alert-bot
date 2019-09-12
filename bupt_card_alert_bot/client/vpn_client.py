@@ -53,7 +53,7 @@ class VpnClient:
 
         # 检测 GP_SESSION_CK 是否在 cookies 中，如果存在说明登录成功
         if 'GP_SESSION_CK' not in sess.cookies:
-            raise AppError('登录失败。未获取到 GP_SESSION_CK。')
+            raise AppError('登录失败（未获取到 GP_SESSION_CK），可能是用户名或密码错误。')
 
         if username not in resp.text or '客户端下载' not in resp.text:
-            raise AppError('登录失败。未成功进入登录后页面。')
+            raise AppError('登录失败（未成功进入登录后页面），可能是用户名或密码错误。')
