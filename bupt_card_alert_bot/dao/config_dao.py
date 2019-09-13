@@ -51,6 +51,9 @@ class ConfigDao:
         :param item: 配置的名字（str）。
         :return: 配置内容（str）
         """
+        if item not in CONFIG_VALID_PROPS:
+            raise AppError(f'配置名 {item} 不合法。')
+
         if item not in self.__conf:
             return None
 

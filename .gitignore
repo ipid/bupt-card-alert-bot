@@ -3,3 +3,4 @@ __state.json
 __transactions.json
 /**/__pycache__
 /**/.idea
+/**/*.log

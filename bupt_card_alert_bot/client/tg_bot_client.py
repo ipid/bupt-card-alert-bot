@@ -6,7 +6,6 @@ from typing import Optional, Dict, Any, Tuple
 import requests
 
 from ..constant import DEFAULT_TG_POLL_TIMEOUT
-from ..dao import StateDao
 from ..exceptions import AppError
 
 
@@ -14,11 +13,10 @@ from ..exceptions import AppError
 # TODO: 处理 requests 库的错误信息
 # TODO: 防御式编程
 class TgBotClient:
-    __slots__ = ('token', 'state_dao', 'proxies')
+    __slots__ = ('token', 'proxies')
 
-    def __init__(self, bot_token: str, state_dao: StateDao, proxy_url: Optional[str] = None) -> None:
+    def __init__(self, bot_token: str, proxy_url: Optional[str] = None) -> None:
         self.token = bot_token
-        self.state_dao = state_dao
         if proxy_url is None:
             self.proxies = None
         else:
@@ -27,18 +25,24 @@ class TgBotClient:
                 'https': proxy_url
             }
 
-    def wait_for_specific_message(self, wait_msg: str, timeout: int = DEFAULT_TG_POLL_TIMEOUT) -> Optional[int]:
+    def wait_for_specific_message(self, wait_msg: str,
+                                  timeout: int = DEFAULT_TG_POLL_TIMEOUT,
+                                  strip_msg: bool = True) -> Optional[int]:
         """
         通过 getUpdates 方法获取新消息，直到获取到某条特定的消息才返回。
         返回该消息的 chat id；如果超时，返回 None。
 
         :param timeout: 超时时间（单位：秒），超过该时间则返回 None。
         :param wait_msg: 当机器人收到该消息时，方法返回。
+        :param strip_msg: 收到消息时是否先将该消息 strip 再判断是否一致。
         :return: 该消息的 chat id，或 None
         """
 
         # 由于可能获取到非 wait_msg 的消息，所以必须循环获取消息
-        res = self.__msg_polling_loop(wait_msg, timeout)
+        if strip_msg:
+            wait_msg = wait_msg.strip()
+
+        res = self.__msg_polling_loop(wait_msg, timeout, strip_msg)
         if res is None:
             return None
 
@@ -51,11 +55,13 @@ class TgBotClient:
 
         return chat_id
 
-    def __msg_polling_loop(self, wait_msg: str, timeout: int) -> Optional[Tuple[int, int]]:
+    def __msg_polling_loop(self, wait_msg: str, timeout: int, strip_msg: bool) -> Optional[Tuple[int, int]]:
         """
         通过 Bot API 获取消息的循环。
         :param wait_msg: 见 wait_for_specific_message 方法
         :param timeout: 见 wait_for_specific_message 方法
+        :param strip_msg: 见 wait_for_specific_message 方法
+        :param
         :return: 元组：对应 wait_msg 的 (chat_id, update_id)
         """
 
@@ -92,6 +98,9 @@ class TgBotClient:
 
                 # 获取文本和 chat_id
                 msg_txt = update.get('message', {}).get('text', '')
+                if strip_msg:
+                    msg_txt = msg_txt.strip()
+
                 chat_id = update.get('message', {}).get('chat', {}).get('id', None)
 
                 if msg_txt == wait_msg and chat_id is not None:
@@ -116,12 +125,16 @@ class TgBotClient:
             'disable_web_page_preview': True,
         })
 
-    def get_me(self) -> Dict[str, Any]:
+    def get_bot_name(self) -> Optional[str]:
         """
         调用 Telegram Bot 的 getMe 方法。用于测试 token 是否正确。
         :return: 当前 bot 的个人信息。
         """
-        return self.call('getMe')
+        res = self.call('getMe')
+        if res.get('id', None) is None:
+            raise AppError('调用 getMe 方法错误，无法获取 Bot 信息。')
+
+        return res.get('username', None)
 
     def call(self, method: str, param: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """

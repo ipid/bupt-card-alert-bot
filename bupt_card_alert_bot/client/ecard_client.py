@@ -7,7 +7,7 @@
 __all__ = ('EcardClient',)
 
 import re
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Set, Dict
 
 from bs4 import BeautifulSoup
 
@@ -23,6 +23,12 @@ TR_DATA_EXPECTED_LENGTH = 7
 
 
 class EcardClient:
+    """
+    ecard.bupt.edu.cn 的客户端。
+
+    该类遵守类似无头浏览器（如 Selenium）的逻辑。
+    在获取某个页面上的信息时，需先调用 goto 开头的方法，再调用 parse 开头的方法。
+    """
     __slots__ = ('sess_keep', 'last_soup')
 
     def __init__(self, sess_keep: SessionKeeper):
@@ -115,16 +121,16 @@ class EcardClient:
 
         self.last_soup = BeautifulSoup(resp.text, 'html.parser')
 
-    def parse_consume_info(self):
+    def parse_consume_info(self) -> Set[Transaction]:
         form1 = self.last_soup.find(id='form1')
         info_table = form1.find(id='ContentPlaceHolder1_gridView')
         if info_table is None:
             raise AppError('找不到存放消费记录的 <table>。')
         if 'class="gvNoRecords"' in str(info_table):
             # 网页弹出了提示“未查询到记录！”
-            return []
+            return set()
 
-        res = []
+        res = set()
         # 遍历存放消费记录的 <table> 的每一个 <tr>
         for tr in info_table.select('tr:not(.HeaderStyle)'):
             # 将多余的 HTML 标签替换为换行符，再将头尾换行符去掉，最后按行分割为字符串数组
@@ -149,11 +155,11 @@ class EcardClient:
                 op_timestamp=parse_ecard_date(tr_data[0]),
             )
 
-            res.append(transaction)
+            res.add(transaction)
 
         return res
 
-    def is_sort_button_desc(self):
+    def is_sort_button_desc(self) -> bool:
         """
         在已进入“xx信息查询”页面的状态下，判断“操作时间”上的按钮是否处于降序状态。
         :return: True 表示当前操作时间按降序排列
@@ -169,8 +175,8 @@ class EcardClient:
 
         return btn.attrs['class'] == 'SortBt_Desc'
 
-    def __get_post_body_of_form(self):
-        form = {}
+    def __get_post_body_of_form(self) -> Dict[str, str]:
+        form = dict()
 
         for i in self.last_soup.form.find_all(attrs={'name': True}):
             form[i.attrs['name']] = i.attrs['value'] if 'value' in i.attrs else ''

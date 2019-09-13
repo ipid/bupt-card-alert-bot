@@ -5,10 +5,11 @@ __all__ = ('StateDao',)
 
 import json
 from copy import deepcopy
-from pathlib import Path
+from typing import Any
 
 from ..constant import *
 from ..exceptions import AppError
+from ..util import get_path_status, PathStatus
 
 STATES_AND_DEFAULTS = {
     # Telegram 机器人是否已部署
@@ -29,22 +30,14 @@ class StateDao:
     def __init__(self, path=DEFAULT_STATE_FILE_PATH):
         self.__path = path
 
-        path = Path(path)
-
-        # 根据文件是否存在进行初始化逻辑
-        if path.exists():
-            # 如果存在但不是文件，就抛出错误
-            if not path.is_file():
-                raise AppError(f'{path} 不是文件，无法覆盖或读取。')
-
-            # 如果存在且是文件，就读取
-            # TODO: 防御式编程
+        ps = get_path_status(path)
+        if ps == PathStatus.NOT_EXIST:
+            self.reset_all()
+        elif ps == PathStatus.READABLE:
             with path.open('r', encoding=UNIFIED_ENCODING) as f:
                 self.__conf = json.load(f)
-
         else:
-            # 如果不存在，就生成一个新的
-            self.reset_all()
+            raise AppError(f'{path} 不是文件，无法覆盖或读取。')
 
     def reset_all(self) -> None:
         """
@@ -73,7 +66,7 @@ class StateDao:
             raise AppError(f'要访问的状态条目 {item} 不存在。')
         return self.__conf[item]
 
-    def __setitem__(self, key: str, value: str) -> None:
+    def __setitem__(self, key: str, value: Any) -> None:
         """
         设置状态中的某一条。
         :param key: 条目的名字（str）。

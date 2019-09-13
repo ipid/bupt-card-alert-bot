@@ -9,7 +9,7 @@ def tz_beijing():
     return timezone(timedelta(hours=8))
 
 
-def get_begin_end_date(days=DEFAULT_TIMEDELTA_DAYS) -> Tuple[str, str]:
+def get_begin_end_date(days=DEFAULT_ECARD_TIMEDELTA) -> Tuple[str, str]:
     """
     计算当前时区下的 days 天前的日期和今天日期，作为查询时所使用的开始和结束日期。
     :param days: 天数之差

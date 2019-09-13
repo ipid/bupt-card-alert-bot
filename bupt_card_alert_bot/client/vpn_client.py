@@ -5,7 +5,7 @@
 
 __all__ = ('VpnClient',)
 
-from bupt_card_alert_bot.popo import SessionKeeper
+from ..popo import SessionKeeper
 from ..exceptions import AppError
 from ..util import fix_response_encoding
 

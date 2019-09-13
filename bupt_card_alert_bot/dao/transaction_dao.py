@@ -8,14 +8,30 @@ import json
 from typing import Iterable, Set
 
 from ..constant import *
+from ..exceptions import AppError
 from ..popo import Transaction
+from ..util import PathStatus, get_path_status
 
 
 class TransactionDao:
+    """
+    负责持久化读写“已经发送过通知的消费记录”（Transaction 对象）。
+    由于写次数大于读次数，该类不设内存缓存。
+    """
     __slots__ = ('__path',)
 
     def __init__(self, file_path=DEFAULT_TRANSACTION_FILE_PATH):
         self.__path = file_path
+
+        ps = get_path_status(file_path)
+        if ps == PathStatus.NOT_EXIST:
+            self.reset_all()
+        elif ps == PathStatus.UNREADABLE:
+            raise AppError(f'{file_path} 不是文件，无法覆盖或读取。')
+
+    def reset_all(self):
+        with open(self.__path, 'w', encoding=UNIFIED_ENCODING) as f:
+            json.dump([], f)
 
     def load_transaction_set(self) -> Set[Transaction]:
         with open(self.__path, 'r', encoding=UNIFIED_ENCODING) as f:

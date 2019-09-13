@@ -1,5 +1,3 @@
-import requests
-
 from bupt_card_alert_bot import *
 
 sess = requests.Session()
@@ -12,7 +10,6 @@ ecc = EcardClient(sess_keep)
 state_dao = StateDao()
 tgbot = TgBotClient(
     bot_token=config_dao['bot.api-token'],
-    state_dao=state_dao,
     proxy_url=config_dao['proxy.url'],
 )
 
@@ -41,7 +38,7 @@ print(f'trans load == store: {transactions == load_trans}')
 
 print(f'''state_dao['tg_deployed'] = {state_dao['tg_deployed']}''')
 print(f'''state_dao['tg_chat_id'] = {state_dao['tg_chat_id']}''')
-print(tgbot.get_me())
+print(tgbot.get_bot_name())
 chat_id = tgbot.wait_for_specific_message('/ecard_deploy fuck you', timeout=10)
 print(f'chat_id = {chat_id}')
 if chat_id is not None:
