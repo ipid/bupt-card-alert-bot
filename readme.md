@@ -42,4 +42,4 @@ nohup python main.py &
 
 #### 版权
 
-本代码按照 MIT 协议发布。征得同意使用了 FredericDT/BUPTCardScraper 的部分代码。
+本代码按照 MIT 协议发布。征得同意使用了 [FredericDT/BUPTCardScraper](https://github.com/FredericDT/BUPTCardScraper) 的部分代码。

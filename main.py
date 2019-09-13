@@ -46,7 +46,7 @@ def print_user_info():
     ecc.goto_personal_info_page()
     user_info = ecc.parse_personal_info()
     logger.info(
-        f'Fetching transactions for current user:\n'
+        f'Fetching transactions of current user:\n'
         f'    Name: {user_info.name}\n'
         f'    Id: {user_info.id}\n'
         f'    Role: {user_info.role}\n'
