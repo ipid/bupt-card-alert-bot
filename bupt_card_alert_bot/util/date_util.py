@@ -6,6 +6,10 @@ from ..constant import *
 
 
 def tz_beijing() -> timezone:
+    """
+    返回表示北京时间的 timezone 对象。
+    :return: timezone 对象
+    """
     return timezone(timedelta(hours=8))
 
 

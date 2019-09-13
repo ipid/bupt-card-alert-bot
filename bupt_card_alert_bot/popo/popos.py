@@ -5,6 +5,9 @@ __all__ = (
 )
 from collections import namedtuple
 
+"""
+记录 ecard 网站上个人信息。
+"""
 EcardUserInfo = namedtuple('EcardUserInfo', [
     # 学号
     'id',
@@ -16,11 +19,17 @@ EcardUserInfo = namedtuple('EcardUserInfo', [
     'role'
 ])
 
+"""
+用于在各个类之间传递 requests.Session 对象。
+"""
 SessionKeeper = namedtuple('SessionKeeper', [
     # 存放 requests.Session 对象的属性
     'sess'
 ])
 
+"""
+用于结构化地记录一条消费记录。
+"""
 Transaction = namedtuple('Transaction', [
     # 操作时间
     'op_datetime',

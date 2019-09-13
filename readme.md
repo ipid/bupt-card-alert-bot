@@ -18,7 +18,7 @@ Python 3.6+，建议使用 venv。
 pip install -r requirements.txt
 ```
 
-3、自行建立一个 Telegram Bot（教程：https://www.teleme.io/articles/create_your_own_telegram_bot?hl=zh-hans）。
+3、自行建立一个 Telegram Bot（教程：[How to create your own Telegram bot](https://www.teleme.io/articles/create_your_own_telegram_bot?hl=zh-hans)）。
 
 4、建立好之后，将 config.sample.json 改名为 config.json，并填写其中的内容。
 
@@ -30,7 +30,7 @@ python main.py --deploy
 
 并按照指示部署机器人。
 
-6、运行服务器：
+6、持续地运行服务器：
 
 ```bash
 nohup python main.py &

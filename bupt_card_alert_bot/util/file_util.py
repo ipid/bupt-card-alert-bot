@@ -14,6 +14,11 @@ class PathStatus:
 
 
 def get_path_status(path: str) -> int:
+    """
+    获取某个路径的状态。返回 PathStatus 的某个属性。详情参考 PathStatus 的注释。
+    :param path: 文件路径
+    :return: PathStatus 的某个属性
+    """
     path = Path(path)
 
     # 根据文件是否存在进行初始化逻辑

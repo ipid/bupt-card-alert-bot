@@ -29,7 +29,11 @@ trans_log = set()
 
 
 # --- 以下定义各工具函数
-def vpn_ecard_login():
+def vpn_ecard_login() -> None:
+    """
+    调用 VpnClient 与 EcardClient 类，使其处于已登录状态。
+    :return: None
+    """
     vpc.login(
         username=config_dao['vpn.username'],
         password=config_dao['vpn.password'],
@@ -42,7 +46,12 @@ def vpn_ecard_login():
     )
 
 
-def print_user_info():
+def print_user_info() -> None:
+    """
+    打印用户的姓名、学号等信息。
+    通过获取个人信息，验证 vpn、ecard、tgbot 等配置是否正确。
+    :return: None
+    """
     ecc.goto_personal_info_page()
     user_info = ecc.parse_personal_info()
     logger.info(
@@ -53,22 +62,36 @@ def print_user_info():
     )
 
 
-def gc_trans_log():
+def gc_trans_log(lookup_timedelta_days: int) -> None:
+    """
+    清除 trans_log 中旧的交易记录。
+    :param lookup_timedelta_days: 在 ecard 网站上查询时，最大的“起始时间”距离今天的天数
+    :return: None
+    """
+
     # TODO: 实现 trans_log 的垃圾回收逻辑
     pass
 
 
 # --- 以下为主程序的不同部分
-def deploy_bot():
+def deploy_bot() -> None:
+    """
+    部署 Telegram Bot。
+    :return: None
+    """
     logger.info(f'Deploying bot: @{tgbot.get_bot_name()}')
 
+    # 如果已部署，则提醒用户
     if state_dao['tg_deployed']:
         logger.info('The bot is already deployed. However you can overwrite previous deployment.\n')
 
+    # 随机生成若干位数的“部署命令”。
     trigger_cmd = DEFAULT_DEPLOY_COMMAND + ' ' + ''.join(
         random.choices(string.ascii_letters + string.digits, k=DEPLOY_TRIGGER_STR_LEN))
     logger.debug('Trigger command generated: ' + trigger_cmd)
 
+    # 轮询等待用户发送信息；
+    # 当用户给 Bot 发送一模一样的指令时，将发送消息所在的 Chat 的 chat_id 记录下来。
     print('Now send the following command to your Telegram Bot:\n')
     print(trigger_cmd + '\n\n')
     print(f'Please send the text within {DEFAULT_TG_POLL_TIMEOUT} seconds.')
@@ -81,12 +104,18 @@ def deploy_bot():
         tgbot.send_message(chat_id, '[INFO] Bot 成功部署。')
         logger.info(f'Telegram is successfully deployed. Chat id: {chat_id}')
     else:
+        # “等待指定消息”超时，未获取到 chat_id
         logger.warning('Failed to receive the command above. Advise:')
         print('1) Ensure you send exactly the same text to the bot.')
         print('''2) Double-check whether your api token corresponds to your bot's name.''')
 
 
-def server():
+def server() -> None:
+    """
+    服务器模式。该模式下本应用长时间运行。
+    TODO: 处理第三方库产生的异常
+    :return: None
+    """
     logger.debug('running server')
 
     # 如果 Telegram Bot 没有部署则退出
@@ -103,21 +132,24 @@ def server():
     print_user_info()
     logger.info(f'Bot username: @{tgbot.get_bot_name()}')
 
+    # 循环获取消费记录，并通过 Bot 发送给用户
     logger.info('Begin main loop...')
-    # 进入循环
     while True:
         logger.debug('开始一次新循环')
+
+        # 发送请求，查询消费记录
         ecc.goto_consume_info_page()
         ecc.lookup_consume_info(
             lookup_date=get_begin_end_date(DEFAULT_ECARD_TIMEDELTA),
             with_sort_button=not ecc.is_sort_button_desc(),
         )
         current_trans = ecc.parse_consume_info()
+
         # 过滤掉已经发送过通知的消费记录
         new_trans = current_trans - trans_log
         logger.debug(f'获得了 {len(current_trans)} 条交易记录, 其中 {len(new_trans)} 条为新记录')
 
-        # 循环将新的消费记录发送给用户
+        # 将多条新的消费记录发送给用户
         for trans in new_trans:
             logger.debug(f'发送 {trans.op_datetime} 的消费记录')
             tgbot.send_message(state_dao['tg_chat_id'], '\n'.join((
@@ -130,11 +162,15 @@ def server():
                 f'<b>钱包余额：</b>{trans.balance} 元',
             )))
 
+        # 将新获取的 Transaction 记入 trans_log 中
         trans_log.update(current_trans)
         logger.debug(f'trans_log 元素个数: {len(trans_log)}')
 
         # 循环不能高速执行，否则会遭到学校反爬
         time.sleep(DEFAULT_MAIN_LOOP_INTERVAL)
+
+        # 清理旧的消费记录缓存
+        gc_trans_log(DEFAULT_ECARD_TIMEDELTA)
 
 
 # --- 以下为主函数
@@ -142,8 +178,10 @@ def main():
     args = argp.parse_args()
     try:
         if args.deploy:
+            # Telegram Bot 部署模式
             deploy_bot()
         else:
+            # 服务器模式
             server()
     except KeyboardInterrupt:
         # 用户按下了 Ctrl+C

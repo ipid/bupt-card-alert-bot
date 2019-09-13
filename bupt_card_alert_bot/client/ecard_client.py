@@ -27,7 +27,9 @@ class EcardClient:
     ecard.bupt.edu.cn 的客户端。
 
     该类遵守类似无头浏览器（如 Selenium）的逻辑。
-    在获取某个页面上的信息时，需先调用 goto 开头的方法，再调用 parse 开头的方法。
+
+    在获取某个页面上的信息时，需先调用以 goto/lookup 开头的方法（这类方法改变类的状态），
+    再调用 parse 开头的方法。
     """
     __slots__ = ('sess_keep', 'last_soup')
 
@@ -38,6 +40,16 @@ class EcardClient:
         self.sess_keep = sess_keep
 
     def goto(self, url: str, validation: Optional[str] = None) -> Any:
+        """
+        向 url 发送 get 请求，并将获取到的 HTML 解析后存入本类中。
+
+        为验证该 GET 请求是否成功，可通过 validation 参数提供一段文字，
+        如果在服务器的返回中未找到此段文字（或状态码不为 200），则认为请求失败。
+        :param url: URL
+        :param validation: 为验证该 GET 请求是否成功
+        :return: requests.get() 的返回值，原始请求结果
+        """
+
         sess = self.sess_keep.sess
         resp = sess.get(url)
         if resp.status_code != 200:
@@ -59,8 +71,15 @@ class EcardClient:
         self.goto('https://vpn.bupt.edu.cn/http/ecard.bupt.edu.cn/User/baseinfo.aspx', '个 人 基 本 信 息')
 
     def login(self, username: str, password: str) -> None:
+        """
+        模拟登录 ecard 网站。
+        :param username: 用户名
+        :param password: 密码1
+        :return: None
+        """
         sess = self.sess_keep.sess
 
+        # 填写表单
         form = self.__get_post_body_of_form()
 
         form['txtUserName'] = username
@@ -80,6 +99,10 @@ class EcardClient:
         self.last_soup = BeautifulSoup(resp.text, 'html.parser')
 
     def parse_personal_info(self) -> EcardUserInfo:
+        """
+        从本类的状态中解析 Ecard 个人信息。
+        :return: EcardUserInfo 对象
+        """
         soup = self.last_soup
         ecard_info = EcardUserInfo(
             id=soup.find(id='ContentPlaceHolder1_txtOutID').string,
@@ -93,12 +116,18 @@ class EcardClient:
                             lookup_date: Optional[Tuple[str, str]] = None) -> None:
         """
         向查询消费记录的接口发送 POST 请求，以获取含消费记录的页面。
+        获取到的 HTML 将在解析后存入本类中。
+
         :param with_sort_button: 该网站按下“箭头”按钮时会发出 POST 请求。如果为 True，将在 POST 同时模拟按下该按钮。
         :param lookup_date: 网站上的参数“起始日期”和“截止日期”，形如 2000-01-01
         :return: None
         """
+
+        # 填写查询表单（以下内容为通过抓包获取）
         form = self.__get_post_body_of_form()
         form['__EVENTARGUMENT'] = ''
+
+        # 当 with_sort_button 时，只需略微修改表单
         if with_sort_button:
             form['__EVENTTARGET'] = 'ctl00$ContentPlaceHolder1$gridView$ctl01$SortBt'
             if 'ctl00$ContentPlaceHolder1$btnSearch' in form:
@@ -122,6 +151,11 @@ class EcardClient:
         self.last_soup = BeautifulSoup(resp.text, 'html.parser')
 
     def parse_consume_info(self) -> Set[Transaction]:
+        """
+        从本类的状态中解析个学号、姓名等个人信息。
+        :return: set 容器，元素为 Transaction 对象
+        """
+
         form1 = self.last_soup.find(id='form1')
         info_table = form1.find(id='ContentPlaceHolder1_gridView')
         if info_table is None:
@@ -176,6 +210,12 @@ class EcardClient:
         return btn.attrs['class'] == 'SortBt_Desc'
 
     def __get_post_body_of_form(self) -> Dict[str, str]:
+        """
+        Aspx 提交表单时必须提交 __VIEWSTATE，该值在正常访问时通过 hidden <input> 传递给浏览器。
+        本方法可从 self.last_soup 中获取到类似的必填属性值。然而，剩余的内容仍要自己填写。
+
+        :return: dict，表示一个表单
+        """
         form = dict()
 
         for i in self.last_soup.form.find_all(attrs={'name': True}):
