@@ -20,7 +20,7 @@ class TransactionDao:
     """
     __slots__ = ('__path',)
 
-    def __init__(self, file_path=DEFAULT_TRANSACTION_FILE_PATH):
+    def __init__(self, file_path: str = DEFAULT_TRANSACTION_FILE_PATH) -> None:
         self.__path = file_path
 
         ps = get_path_status(file_path)
@@ -29,7 +29,7 @@ class TransactionDao:
         elif ps == PathStatus.UNREADABLE:
             raise AppError(f'{file_path} 不是文件，无法覆盖或读取。')
 
-    def reset_all(self):
+    def reset_all(self) -> None:
         with open(self.__path, 'w', encoding=UNIFIED_ENCODING) as f:
             json.dump([], f)
 

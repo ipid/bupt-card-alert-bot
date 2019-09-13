@@ -25,7 +25,7 @@ class ConfigDao:
     """
     __slots__ = ('__conf',)
 
-    def __init__(self, config_filename=DEFAULT_CONFIG_FILE_PATH):
+    def __init__(self, config_filename: str = DEFAULT_CONFIG_FILE_PATH) -> None:
         """
         构造函数。初始化一个已经读入了配置文件的 ConfigDao 类。
         :param config_filename: 配置文件的路径。默认为 DEFAULT_CONFIG_FILE_PATH。

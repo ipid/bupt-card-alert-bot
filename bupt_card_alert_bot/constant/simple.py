@@ -27,7 +27,7 @@ DEFAULT_LOG_PATH = 'log-bupt-card-alert-bot.log'
 """
 begin_end_date 函数的默认参数：天数之差
 """
-DEFAULT_ECARD_TIMEDELTA = 1
+DEFAULT_ECARD_TIMEDELTA = 2
 
 """
 部署 Telegram Bot 的指令。
@@ -45,7 +45,7 @@ DEPLOY_TRIGGER_STR_LEN = 24
 
 注：修改该值时需确定该值大于查询消费记录的时间跨度。
 """
-DELETE_OLD_TRANSACTIONS_DAYS_BEFORE = 2
+DELETE_OLD_TRANSACTIONS_DAYS_BEFORE = DEFAULT_ECARD_TIMEDELTA + 1
 
 """
 整个应用中所使用的统一的文本编码，用于文件读写、bytes 传输等。
@@ -58,6 +58,6 @@ Telegram 客户端中，「等待某条消息」的默认超时时间（秒）�
 DEFAULT_TG_POLL_TIMEOUT = 300
 
 """
-程序每隔多久（单位：秒）查询一次啥来着？
+程序每隔多久（单位：秒）查询一次消费记录。
 """
-DEFAULT_FETCH_TRANS_INTERVAL = 60
+DEFAULT_MAIN_LOOP_INTERVAL = 60

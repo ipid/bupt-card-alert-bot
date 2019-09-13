@@ -13,7 +13,7 @@ class PathStatus:
     UNREADABLE = 2
 
 
-def get_path_status(path: str):
+def get_path_status(path: str) -> int:
     path = Path(path)
 
     # 根据文件是否存在进行初始化逻辑

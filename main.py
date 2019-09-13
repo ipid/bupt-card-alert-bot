@@ -1,12 +1,12 @@
 import argparse
-import logging
+import logging as pymodule_logging
 import random
 import string
 
 from bupt_card_alert_bot import *
 
 # 初始化基础部件
-logger = logging.getLogger('')
+logger = pymodule_logging.getLogger('')
 initialize_logger(logger)
 argp = argparse.ArgumentParser(description='Send alert with Telegram Bot when new transaction is detected.')
 argp.add_argument('--deploy', action='store_true')
@@ -51,6 +51,11 @@ def print_user_info():
         f'    Id: {user_info.id}\n'
         f'    Role: {user_info.role}\n'
     )
+
+
+def gc_trans_log():
+    # TODO: 实现 trans_log 的垃圾回收逻辑
+    pass
 
 
 # --- 以下为主程序的不同部分
@@ -98,8 +103,10 @@ def server():
     print_user_info()
     logger.info(f'Bot username: @{tgbot.get_bot_name()}')
 
+    logger.info('Begin main loop...')
     # 进入循环
     while True:
+        logger.debug('开始一次新循环')
         ecc.goto_consume_info_page()
         ecc.lookup_consume_info(
             lookup_date=get_begin_end_date(DEFAULT_ECARD_TIMEDELTA),
@@ -108,17 +115,41 @@ def server():
         current_trans = ecc.parse_consume_info()
         # 过滤掉已经发送过通知的消费记录
         new_trans = current_trans - trans_log
+        logger.debug(f'获得了 {len(current_trans)} 条交易记录, 其中 {len(new_trans)} 条为新记录')
 
-        pass
+        # 循环将新的消费记录发送给用户
+        for trans in new_trans:
+            logger.debug(f'发送 {trans.op_datetime} 的消费记录')
+            tgbot.send_message(state_dao['tg_chat_id'], '\n'.join((
+                f'<b>校园卡支出 {trans.trans_amount} 元</b>',
+                f'',
+                f'<b>时间：</b>{trans.op_datetime}',
+                f'<b>消费类别：</b>{trans.category}',
+                f'<b>位置：</b>{trans.location}',
+                f'',
+                f'<b>钱包余额：</b>{trans.balance} 元',
+            )))
+
+        trans_log.update(current_trans)
+        logger.debug(f'trans_log 元素个数: {len(trans_log)}')
+
+        # 循环不能高速执行，否则会遭到学校反爬
+        time.sleep(DEFAULT_MAIN_LOOP_INTERVAL)
 
 
 # --- 以下为主函数
 def main():
     args = argp.parse_args()
-    if args.deploy:
-        deploy_bot()
-    else:
-        server()
+    try:
+        if args.deploy:
+            deploy_bot()
+        else:
+            server()
+    except KeyboardInterrupt:
+        # 用户按下了 Ctrl+C
+        pass
+    except Exception as e:
+        logger.exception(e)
 
 
 if __name__ == '__main__':

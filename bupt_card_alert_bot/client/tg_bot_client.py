@@ -122,6 +122,7 @@ class TgBotClient:
         self.call('sendMessage', {
             'chat_id': chat_id,
             'text': msg,
+            'parse_mode': 'HTML',
             'disable_web_page_preview': True,
         })
 

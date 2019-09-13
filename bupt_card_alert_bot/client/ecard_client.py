@@ -7,7 +7,7 @@
 __all__ = ('EcardClient',)
 
 import re
-from typing import Optional, Tuple, Set, Dict
+from typing import Optional, Tuple, Set, Dict, Any
 
 from bs4 import BeautifulSoup
 
@@ -31,13 +31,13 @@ class EcardClient:
     """
     __slots__ = ('sess_keep', 'last_soup')
 
-    def __init__(self, sess_keep: SessionKeeper):
+    def __init__(self, sess_keep: SessionKeeper) -> None:
         if sess_keep.sess is None:
             raise ValueError('sess_keep 内必须有已初始化的 Session。')
 
         self.sess_keep = sess_keep
 
-    def goto(self, url: str, validation: str = None):
+    def goto(self, url: str, validation: Optional[str] = None) -> Any:
         sess = self.sess_keep.sess
         resp = sess.get(url)
         if resp.status_code != 200:
@@ -51,11 +51,11 @@ class EcardClient:
     def goto_login_page(self) -> None:
         self.goto('https://vpn.bupt.edu.cn/http/ecard.bupt.edu.cn/Login.aspx', '用户登录</a>')
 
-    def goto_consume_info_page(self):
+    def goto_consume_info_page(self) -> None:
         self.goto('https://vpn.bupt.edu.cn/http/ecard.bupt.edu.cn/User/ConsumeInfo.aspx',
                   '''User/ConsumeInfo.aspx'>消费信息查询</a>''')
 
-    def goto_personal_info_page(self):
+    def goto_personal_info_page(self) -> None:
         self.goto('https://vpn.bupt.edu.cn/http/ecard.bupt.edu.cn/User/baseinfo.aspx', '个 人 基 本 信 息')
 
     def login(self, username: str, password: str) -> None:

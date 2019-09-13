@@ -1,0 +1,8 @@
+{
+  "vpn.username": "[Student ID]",
+  "vpn.password": "[-- BUPT VPN password --]",
+  "ecard.username": "[Student ID]",
+  "ecard.password": "[-- BUPT Ecard password --]",
+  "bot.api-token": "[-- Telegram Bot API Token --]",
+  "proxy.url": "http://127.0.0.1:8080 [-- DELETE IF DEPLOYED OUTBOARD CHINA --]"
+}

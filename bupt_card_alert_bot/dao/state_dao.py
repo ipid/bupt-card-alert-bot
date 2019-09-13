@@ -23,18 +23,18 @@ STATES_AND_DEFAULTS = {
 class StateDao:
     """
     StateDao 负责持久化存取程序的状态信息。
-    修改本类的属性时，修改的内容将会自动持久化。
+    修改本类的属性时，修改的内容将会自动持久化。可以理解为该类是“可持久化的全局变量”。
     """
     __slots__ = ('__path', '__conf')
 
-    def __init__(self, path=DEFAULT_STATE_FILE_PATH):
+    def __init__(self, path: str = DEFAULT_STATE_FILE_PATH) -> None:
         self.__path = path
 
         ps = get_path_status(path)
         if ps == PathStatus.NOT_EXIST:
             self.reset_all()
         elif ps == PathStatus.READABLE:
-            with path.open('r', encoding=UNIFIED_ENCODING) as f:
+            with open(path, 'r', encoding=UNIFIED_ENCODING) as f:
                 self.__conf = json.load(f)
         else:
             raise AppError(f'{path} 不是文件，无法覆盖或读取。')
@@ -56,7 +56,7 @@ class StateDao:
         with open(self.__path, 'w', encoding=UNIFIED_ENCODING) as f:
             json.dump(self.__conf, f)
 
-    def __getitem__(self, item: str) -> str:
+    def __getitem__(self, item: str) -> Any:
         """
         获取状态（State）中的某一条。
         :param item: 条目的名字（str）。
