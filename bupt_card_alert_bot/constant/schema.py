@@ -10,10 +10,8 @@ CONFIG_SCHEMA = {
         'vpn.password': {'type': 'string', 'minLength': 1},
         'ecard.username': {'type': 'string', 'minLength': 1},
         'ecard.password': {'type': 'string', 'minLength': 1},
-        'bot.api-token': { 'type': 'string', 'minLength': 1},
-        'proxy.url': { 'type': 'string', 'minLength': 1},
-        'proxy.username': { 'type': 'string', 'minLength': 1},
-        'proxy.password': { 'type': 'string', 'minLength': 1},
+        'bot.api-token': {'type': 'string', 'minLength': 1},
+        'proxy.url': {'type': 'string', 'minLength': 1},
     },
     'required': [
         'vpn.username',

@@ -13,17 +13,14 @@ from bs4 import BeautifulSoup
 
 from ..exceptions import AppError
 from ..popo import SessionKeeper, EcardUserInfo, Transaction
-from ..util import get_begin_end_date
+from ..util import get_begin_end_date, parse_ecard_date
 
 # 匹配 HTML 的标签（tag），及其周围的空白符；将多个标签视为一个，以方便替换
 RE_HTML_TAG = re.compile(r'(<[^>]*>(\s|&nbsp;?)*)+')
 
-# Transaction 的属性，按顺序对应的网页上获取的列
-# 如：Transaction 的第 4 属性，对应网页上的第 6 列（均从零计数）
-TRANSACTION_PROP_TO_RAW_PROP = (0, 1, 2, 3, 6)
-
 # 消费记录表格应该有 7 列
 TR_DATA_EXPECTED_LENGTH = 7
+
 
 class EcardClient:
     __slots__ = ('sess_keep', 'last_soup')
@@ -124,7 +121,7 @@ class EcardClient:
         if info_table is None:
             raise AppError('找不到存放消费记录的 <table>。')
         if 'class="gvNoRecords"' in str(info_table):
-            # 弹出提示“未查询到记录！”
+            # 网页弹出了提示“未查询到记录！”
             return []
 
         res = []
@@ -141,9 +138,15 @@ class EcardClient:
                                f'与预设值 {TR_DATA_EXPECTED_LENGTH} 不同，可能是解析代码出错。')
 
             # 将原始数据存入 Transaction 对象，以方便使用
-            transaction = Transaction._make(
-                # 按照对应关系来存入属性
-                tr_data[x] for x in TRANSACTION_PROP_TO_RAW_PROP
+            # 此处将对应关系一行行写出，灵活性更强
+            transaction = Transaction(
+                op_datetime=tr_data[0],
+                category=tr_data[1],
+                trans_amount=tr_data[2],
+                balance=tr_data[3],
+                location=tr_data[6],
+                # 将日期解析成时间戳保存
+                op_timestamp=parse_ecard_date(tr_data[0]),
             )
 
             res.append(transaction)

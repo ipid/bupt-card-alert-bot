@@ -1,8 +1,12 @@
-__all__ = ('get_begin_end_date',)
-from datetime import datetime, timedelta
+__all__ = ('get_begin_end_date', 'parse_ecard_date', 'tz_beijing')
+from datetime import datetime, timedelta, timezone
 from typing import Tuple
 
 from ..constant import *
+
+
+def tz_beijing():
+    return timezone(timedelta(hours=8))
 
 
 def get_begin_end_date(days=DEFAULT_TIMEDELTA_DAYS) -> Tuple[str, str]:
@@ -16,3 +20,16 @@ def get_begin_end_date(days=DEFAULT_TIMEDELTA_DAYS) -> Tuple[str, str]:
     yesterday = today - timedelta(days=days)
 
     return yesterday.strftime('%Y-%m-%d'), today.strftime('%Y-%m-%d')
+
+
+def parse_ecard_date(ecard_date: str) -> int:
+    """
+    解析 ecard 信息查询网页返回的日期。
+    返回 Unix 时间戳。
+
+    :param ecard_date: 形如：2019/9/12 22:52:18 的日期
+    :return: Unix 时间戳，int 类型
+    """
+    dt = datetime.strptime(ecard_date, '%Y/%m/%d %H:%M:%S')
+    dt = dt.replace(tzinfo=tz_beijing())
+    return int(dt.timestamp())

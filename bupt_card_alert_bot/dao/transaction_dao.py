@@ -2,6 +2,8 @@
 提供 TransactionDao 类。
 """
 
+__all__ = ('TransactionDao',)
+
 import json
 from typing import Iterable, Set
 

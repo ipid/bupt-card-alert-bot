@@ -1,7 +1,6 @@
 __all__ = (
     'EcardUserInfo',
     'SessionKeeper',
-    'State',
     'Transaction',
 )
 from collections import namedtuple
@@ -22,30 +21,22 @@ SessionKeeper = namedtuple('SessionKeeper', [
     'sess'
 ])
 
-State = namedtuple('State', [
-    # 记录当前登录 webvpn 所使用的 cookie
-    'cookie',
-
-    # Telegram 机器人是否已部署
-    'tg_deployed',
-
-    # 如果 Telegram 机器人已部署，该变量保存使用者的 ID
-    'tg_userid',
-])
-
 Transaction = namedtuple('Transaction', [
     # 操作时间
-    'operation_time',
+    'op_datetime',
 
     # 科目描述
     'category',
 
     # 交易金额
-    'transaction_amount',
+    'trans_amount',
 
     # 余额
     'balance',
 
     # 终端名称
     'location',
+
+    # 操作时间 - Unix 时间戳,
+    'op_timestamp',
 ])

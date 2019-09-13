@@ -1,13 +1,15 @@
 '''
-    ConfigDao 类。
+提供 ConfigDao 类和单例的 config_dao 实例。
 '''
+__all__ = ('ConfigDao',)
 
 import json
+from typing import Optional
+
 import jsonschema
 
 from ..constant import *
 from ..exceptions import AppError
-
 
 
 class ConfigDao:
@@ -28,8 +30,11 @@ class ConfigDao:
         构造函数。初始化一个已经读入了配置文件的 ConfigDao 类。
         :param config_filename: 配置文件的路径。默认为 DEFAULT_CONFIG_FILE_PATH。
         """
-        with open(config_filename, 'r', encoding=UNIFIED_ENCODING) as f:
-            conf = json.load(f)
+        try:
+            with open(config_filename, 'r', encoding=UNIFIED_ENCODING) as f:
+                conf = json.load(f)
+        except:
+            raise AppError('配置文件读取失败。')
 
         try:
             # 验证配置文件格式是否正确
@@ -40,10 +45,13 @@ class ConfigDao:
 
         self.__conf = conf
 
-    def __getitem__(self, item: str) -> str:
+    def __getitem__(self, item: str) -> Optional[str]:
         """
         获取某个配置。
-        :param item: 配置的名字（key）。
+        :param item: 配置的名字（str）。
         :return: 配置内容（str）
         """
+        if item not in self.__conf:
+            return None
+
         return self.__conf[item]
