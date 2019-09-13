@@ -38,3 +38,8 @@ nohup python main.py &
 
 在此步，你可以使用 supervisor 等工具来管理此应用，以让你的 bot 高可用。
 
+
+
+#### 版权
+
+本代码按照 MIT 协议发布。征得同意使用了 FredericDT/BUPTCardScraper 的部分代码。
