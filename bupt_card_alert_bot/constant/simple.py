@@ -27,7 +27,7 @@ DEFAULT_LOG_PATH = 'log-bupt-card-alert-bot.log'
 """
 begin_end_date 函数的默认参数：天数之差
 """
-DEFAULT_ECARD_TIMEDELTA = 2
+DEFAULT_ECARD_TIMEDELTA = 1
 
 """
 部署 Telegram Bot 的指令。
@@ -65,4 +65,4 @@ DEFAULT_MAIN_LOOP_INTERVAL = 120
 """
 在“合并连续小消费”工具函数中，默认的 threshold 参数
 """
-COMBINE_AMOUNT: float = 0.8
+COMBINE_AMOUNT: float = 1.0

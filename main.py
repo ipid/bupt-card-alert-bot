@@ -6,7 +6,7 @@ import string
 from bupt_card_alert_bot import *
 
 # 初始化基础部件
-logger = pymodule_logging.getLogger('')
+logger = pymodule_logging.getLogger('bupt_card_alert_bot')
 initialize_logger(logger)
 argp = argparse.ArgumentParser(description='Send alert with Telegram Bot when new transaction is detected.')
 argp.add_argument('--deploy', action='store_true', help='Deploy telegram bot')
