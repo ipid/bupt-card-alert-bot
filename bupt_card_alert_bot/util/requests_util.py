@@ -1,5 +1,4 @@
 __all__ = ('fix_response_encoding',)
-
 import chardet
 
 

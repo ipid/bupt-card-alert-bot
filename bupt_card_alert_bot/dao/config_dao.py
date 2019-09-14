@@ -33,15 +33,15 @@ class ConfigDao:
         try:
             with open(config_filename, 'r', encoding=UNIFIED_ENCODING) as f:
                 conf = json.load(f)
-        except:
-            raise AppError('配置文件读取失败。')
+        except Exception as e:
+            raise AppError('配置文件读取失败。') from e
 
         try:
             # 验证配置文件格式是否正确
             jsonschema.validate(conf, CONFIG_SCHEMA)
-        except jsonschema.ValidationError as err:
+        except jsonschema.ValidationError as e:
             # 如果格式不正确，抛出用户友好的错误信息
-            raise AppError('配置文件格式错误。具体错误信息为：' + err.message)
+            raise AppError('配置文件格式错误。') from e
 
         self.__conf = conf
 

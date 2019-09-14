@@ -1,12 +1,12 @@
 import argparse
-import logging as pymodule_logging
 import random
 import string
+from typing import Set
 
 from bupt_card_alert_bot import *
 
 # 初始化基础部件
-logger = pymodule_logging.getLogger('bupt_card_alert_bot')
+logger = pym_logging.getLogger('bupt_card_alert_bot')
 initialize_logger(logger)
 argp = argparse.ArgumentParser(description='Send alert with Telegram Bot when new transaction is detected.')
 argp.add_argument('--deploy', action='store_true', help='Deploy telegram bot')
@@ -27,7 +27,8 @@ tgbot = TgBotClient(
 )
 
 # 记录已经发送过通知的 Transaction（消费记录），初始为 None
-trans_log = set()
+trans_log: Set[Transaction] = trans_dao.load_transaction_set()
+logger.debug(f'初始消费记录：{trans_log}')
 
 
 # --- 以下定义各工具函数
@@ -66,13 +67,26 @@ def print_user_info() -> None:
 
 def gc_trans_log(lookup_timedelta_days: int) -> None:
     """
-    清除 trans_log 中旧的交易记录。
+    清除 trans_log 中旧的消费记录。该函数保证删除的消费记录比查询时的“起始日期”更早。
     :param lookup_timedelta_days: 在 ecard 网站上查询时，最大的“起始时间”距离今天的天数
     :return: None
     """
+    global trans_log
 
-    # TODO: 实现 trans_log 的垃圾回收逻辑
-    pass
+    # 应删掉 del_days_before 天（24 小时）之前的消费记录
+    # 这样保证删除的消费记录一定查不到
+    del_days_before = lookup_timedelta_days + 1
+
+    # 应删掉时间戳在 del_timestamp_before 之前的消费记录
+    del_timestamp_before = timestamp_now() - del_days_before * 24 * 60 * 60
+
+    # 只保留在 del_timestamp_before 之后的消费记录
+    new_trans_log = set(
+        x for x in trans_log if x.op_timestamp >= del_timestamp_before
+    )
+    logger.debug(f'GC：原有 {len(trans_log)} 条记录，'
+                 f'保留时间戳 {del_timestamp_before} 之后的记录，余 {len(new_trans_log)} 条')
+    trans_log = new_trans_log
 
 
 # --- 以下为主程序的不同部分
@@ -112,10 +126,12 @@ def deploy_bot() -> None:
         print('''2) Double-check whether your api token corresponds to your bot's name.''')
 
 
-def server(debug_mode: bool) -> None:
+def server(debug_mode: bool, startup_notify: bool) -> None:
     """
     服务器模式。该模式下本应用长时间运行。
     TODO: 处理第三方库产生的异常
+    :param debug_mode: 是否进入调试模式（可能改变部分行为）
+    :param startup_notify: 服务器启动时是否通知用户
     :return: None
     """
 
@@ -165,14 +181,13 @@ def server(debug_mode: bool) -> None:
 
             # 按照消费时间排序，如果一样，则余额大的在前
             key=lambda x: (x.op_timestamp, -x.balance))
-        logger.debug(f'获得了 {len(current_trans)} 条交易记录, 其中 {len(new_trans)} 条为新记录')
+        logger.debug(f'获得了 {len(current_trans)} 条消费记录, 其中 {len(new_trans)} 条为新记录')
 
         # 为了防止洗澡等小额记录过多，合并细小的消费记录
         # 为了不影响排重逻辑，应在服务器端存储原始消费记录，但是将合并的消费记录发送给用户
         combined_trans = combine_continuous_small_transactions(new_trans)
 
         # 将多条新的消费记录发送给用户
-        # 使用 set 储存的 Transaction 可能是无序的，因此需要排序
         for trans in combined_trans:
             logger.debug(f'发送 {trans.op_datetime} 的消费记录')
             tgbot.send_message(state_dao['tg_chat_id'], '\n'.join((
@@ -187,7 +202,8 @@ def server(debug_mode: bool) -> None:
 
         # 将新获取的、合并后的 Transaction 记入 trans_log 中
         trans_log.update(current_trans)
-        logger.debug(f'trans_log 元素个数: {len(trans_log)}')
+        trans_dao.store_transactions(trans_log)
+        logger.debug(f'成功持久化 trans_log。trans_log 元素个数: {len(trans_log)}')
 
         # 循环不能高速执行，否则会遭到学校反爬
         time.sleep(DEFAULT_MAIN_LOOP_INTERVAL)
@@ -205,12 +221,15 @@ def main():
             deploy_bot()
         else:
             # 服务器模式
-            server(args.debug)
+            server(debug_mode=args.debug, startup_notify=False)
     except KeyboardInterrupt:
         # 用户按下了 Ctrl+C
         pass
     except Exception as e:
+        # 如果产生异常，直接记日志并退出
         logger.exception(e)
+        tgbot.send_message(state_dao['tg_chat_id'], f'[ERROR] 服务器发生异常：{str(e)}')
+        exit(1)
 
 
 if __name__ == '__main__':

@@ -6,6 +6,7 @@
 
 __all__ = ('EcardClient',)
 
+import logging as pym_logging
 import re
 from typing import Optional, Tuple, Set, Dict, Any
 
@@ -13,7 +14,9 @@ from bs4 import BeautifulSoup
 
 from ..exceptions import AppError
 from ..popo import SessionKeeper, EcardUserInfo, Transaction
-from ..util import get_begin_end_date, parse_ecard_date
+from ..util import get_begin_end_date, parse_ecard_date, log_resp
+
+logger = pym_logging.getLogger('bupt_card_alert_bot.client.ecard_client')
 
 # 匹配 HTML 的标签（tag），及其周围的空白符；将多个标签视为一个，以方便替换
 RE_HTML_TAG = re.compile(r'(<[^>]*>(\s|&nbsp;?)*)+')
@@ -53,8 +56,10 @@ class EcardClient:
         sess = self.sess_keep.sess
         resp = sess.get(url)
         if resp.status_code != 200:
+            log_resp(logger, resp)
             raise AppError(f'无法获取 URL {url}')
         if validation is not None and validation not in resp.text:
+            log_resp(logger, resp)
             raise AppError(f'指定的内容「{validation}」无法在 {url} 中找到。')
 
         self.last_soup = BeautifulSoup(resp.text, 'html.parser')
@@ -94,6 +99,7 @@ class EcardClient:
             raise AppError('用户提供的 Ecard 用户名或密码错误，无法登录 Ecard 网站。')
 
         if not resp.url.endswith('Index.aspx'):
+            log_resp(logger, resp)
             raise AppError('无法登录 Ecard 网站。')
 
         self.last_soup = BeautifulSoup(resp.text, 'html.parser')
@@ -146,6 +152,7 @@ class EcardClient:
         resp = sess.post('https://vpn.bupt.edu.cn/http/ecard.bupt.edu.cn/User/ConsumeInfo.aspx',
                          data=form)
         if '''User/ConsumeInfo.aspx'>消费信息查询</a>''' not in resp.text:
+            log_resp(logger, resp)
             raise AppError('消费信息查询失败')
 
         self.last_soup = BeautifulSoup(resp.text, 'html.parser')
@@ -159,6 +166,7 @@ class EcardClient:
         form1 = self.last_soup.find(id='form1')
         info_table = form1.find(id='ContentPlaceHolder1_gridView')
         if info_table is None:
+            logger.debug(f'form1 的 HTML: {str(info_table)}')
             raise AppError('找不到存放消费记录的 <table>。')
         if 'class="gvNoRecords"' in str(info_table):
             # 网页弹出了提示“未查询到记录！”
@@ -174,6 +182,7 @@ class EcardClient:
                 continue
 
             if len(tr_data) != TR_DATA_EXPECTED_LENGTH:
+                logger.debug(f'res = {res}\ninfo_table = {str(info_table)}\ntr_data = {tr_data}')
                 raise AppError(f'消费记录的列数为 {len(tr_data)}，'
                                f'与预设值 {TR_DATA_EXPECTED_LENGTH} 不同，可能是解析代码出错。')
 
@@ -201,10 +210,12 @@ class EcardClient:
 
         btn = self.last_soup.find(id='ContentPlaceHolder1_gridView_SortBt')
         if btn is None:
+            logger.debug(f'self.last_soup = {str(self.last_soup)}')
             raise AppError('没找到箭头按钮（SortBt）。')
 
         class_name = btn.attrs['class'][0]
         if class_name != 'SortBt_Desc' and class_name != 'SortBt_Asc':
+            logger.debug(f'btn = {str(btn)}\nclass_name = {class_name}')
             raise AppError('箭头按钮（SortBt）的 class 属性异常。')
 
         return btn.attrs['class'] == 'SortBt_Desc'

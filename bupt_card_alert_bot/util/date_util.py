@@ -1,16 +1,11 @@
-__all__ = ('get_begin_end_date', 'parse_ecard_date', 'tz_beijing')
+__all__ = ('get_begin_end_date', 'parse_ecard_date', 'timestamp_now')
+import time
 from datetime import datetime, timedelta, timezone
 from typing import Tuple
 
 from ..constant import *
 
-
-def tz_beijing() -> timezone:
-    """
-    返回表示北京时间的 timezone 对象。
-    :return: timezone 对象
-    """
-    return timezone(timedelta(hours=8))
+tz_beijing = timezone(timedelta(hours=8))
 
 
 def get_begin_end_date(days: int = DEFAULT_ECARD_TIMEDELTA) -> Tuple[str, str]:
@@ -19,8 +14,7 @@ def get_begin_end_date(days: int = DEFAULT_ECARD_TIMEDELTA) -> Tuple[str, str]:
     :param days: 天数之差
     :return: (days 天前的日期, 今天日期)
     """
-
-    today = datetime.now()
+    today = datetime.now(tz_beijing)
     yesterday = today - timedelta(days=days)
 
     return yesterday.strftime('%Y-%m-%d'), today.strftime('%Y-%m-%d')
@@ -35,5 +29,13 @@ def parse_ecard_date(ecard_date: str) -> int:
     :return: Unix 时间戳，int 类型
     """
     dt = datetime.strptime(ecard_date, '%Y/%m/%d %H:%M:%S')
-    dt = dt.replace(tzinfo=tz_beijing())
+    dt = dt.replace(tzinfo=tz_beijing)
     return int(dt.timestamp())
+
+
+def timestamp_now() -> int:
+    """
+    返回当前的 Unix 时间戳（秒）。
+    :return: Unix 时间戳（秒）
+    """
+    return int(time.time())

@@ -40,14 +40,6 @@ DEFAULT_DEPLOY_COMMAND = '/ecard_deploy'
 DEPLOY_TRIGGER_STR_LEN = 24
 
 """
-虽然本程序缓存消费记录以防止重复通知，但为了减少内存消耗，需要定期清理旧的消费记录。
-该配置指定了默认应该清理掉多久之前的消费记录。
-
-注：修改该值时需确定该值大于查询消费记录的时间跨度。
-"""
-DELETE_OLD_TRANSACTIONS_DAYS_BEFORE = DEFAULT_ECARD_TIMEDELTA + 1
-
-"""
 整个应用中所使用的统一的文本编码，用于文件读写、bytes 传输等。
 """
 UNIFIED_ENCODING = 'utf-8'

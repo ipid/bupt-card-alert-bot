@@ -1,4 +1,5 @@
 import json
+import logging as pym_logging
 import math
 import time
 from typing import Optional, Dict, Any, Tuple
@@ -8,10 +9,9 @@ import requests
 from ..constant import DEFAULT_TG_POLL_TIMEOUT
 from ..exceptions import AppError
 
+logger = pym_logging.getLogger(__name__)
 
-# TODO: 处理 Telegram 服务器返回的错误信息
-# TODO: 处理 requests 库的错误信息
-# TODO: 防御式编程
+
 class TgBotClient:
     __slots__ = ('token', 'proxies')
 
@@ -66,7 +66,7 @@ class TgBotClient:
         """
 
         if not isinstance(timeout, int) or timeout <= 0:
-            raise AppError('timeout 应该为整数类型且大于 0')
+            raise ValueError('timeout 应该为整数类型且大于 0')
 
         # 记录到超时为止还剩多少时间
         begin_time = time.monotonic()
@@ -91,6 +91,7 @@ class TgBotClient:
             for update in updates:
                 update_id = update.get('update_id', None)
                 if update_id is None:
+                    logger.debug(f'updates = {updates}')
                     raise AppError('Telegram Bot API 错误：getUpdates 返回的 Update 对象没有 update_id')
 
                 # 记录最大的 update_id
@@ -146,23 +147,31 @@ class TgBotClient:
         :param param: Telegram API 的参数。
         :return: API 返回值，使用 Python 的类 JSON 格式
         """
+        logger.debug(f'Telegram API call: {method}({param})')
 
         if param is not None:
             data = json.dumps(param)
         else:
             data = None
 
-        r = requests.post(
-            f'https://api.telegram.org/bot{self.token}/{method}',
-            headers={
-                'Content-Type': 'application/json',
-            },
-            proxies=self.proxies,
-            data=data,
-        )
+        try:
+            r = requests.post(
+                f'https://api.telegram.org/bot{self.token}/{method}',
+                headers={
+                    'Content-Type': 'application/json',
+                },
+                proxies=self.proxies,
+                data=data,
+            )
+        except KeyboardInterrupt:
+            pass
+        except Exception as e:
+            raise AppError('无法访问 Telegram 服务器。') from e
+
         res = r.json()
 
         if res['ok']:
             return res['result']
         else:
+            logger.debug(f'res 不 OK。res = {res}')
             raise AppError('Telegram API 调用错误：' + res['description'])
