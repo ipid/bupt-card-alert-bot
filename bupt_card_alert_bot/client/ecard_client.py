@@ -182,8 +182,8 @@ class EcardClient:
             transaction = Transaction(
                 op_datetime=tr_data[0],
                 category=tr_data[1],
-                trans_amount=tr_data[2],
-                balance=tr_data[3],
+                trans_amount=float(tr_data[2]),
+                balance=float(tr_data[3]),
                 location=tr_data[6],
                 # 将日期解析成时间戳保存
                 op_timestamp=parse_ecard_date(tr_data[0]),

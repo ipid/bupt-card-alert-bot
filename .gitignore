@@ -4,3 +4,4 @@ __transactions.json
 /**/__pycache__
 /**/.idea
 /**/*.log
+*.ipynb

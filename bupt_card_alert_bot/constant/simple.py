@@ -61,3 +61,8 @@ DEFAULT_TG_POLL_TIMEOUT = 300
 程序每隔多久（单位：秒）查询一次消费记录。
 """
 DEFAULT_MAIN_LOOP_INTERVAL = 120
+
+"""
+在“合并连续小消费”工具函数中，默认的 threshold 参数
+"""
+COMBINE_AMOUNT: float = 0.8

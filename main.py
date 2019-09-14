@@ -9,7 +9,9 @@ from bupt_card_alert_bot import *
 logger = pymodule_logging.getLogger('')
 initialize_logger(logger)
 argp = argparse.ArgumentParser(description='Send alert with Telegram Bot when new transaction is detected.')
-argp.add_argument('--deploy', action='store_true')
+argp.add_argument('--deploy', action='store_true', help='Deploy telegram bot')
+argp.add_argument('--debug', action='store_true',
+                  help='Turn on debug mode for development. Some behavior changes.')
 sess = requests.Session()
 
 # 初始化当前应用中的类
@@ -24,7 +26,7 @@ tgbot = TgBotClient(
     proxy_url=config_dao['proxy.url'],
 )
 
-# 记录已经发送过通知的 Transaction（消费记录）
+# 记录已经发送过通知的 Transaction（消费记录），初始为 None
 trans_log = set()
 
 
@@ -110,12 +112,16 @@ def deploy_bot() -> None:
         print('''2) Double-check whether your api token corresponds to your bot's name.''')
 
 
-def server() -> None:
+def server(debug_mode: bool) -> None:
     """
     服务器模式。该模式下本应用长时间运行。
     TODO: 处理第三方库产生的异常
     :return: None
     """
+
+    # trans_log 的值需要被修改
+    global trans_log
+
     logger.debug('running server')
 
     # 如果 Telegram Bot 没有部署则退出
@@ -132,6 +138,9 @@ def server() -> None:
     print_user_info()
     logger.info(f'Bot username: @{tgbot.get_bot_name()}')
 
+    # 通知用户服务器已运行
+    tgbot.send_message(state_dao['tg_chat_id'], '[INFO] 服务器开始运行')
+
     # 循环获取消费记录，并通过 Bot 发送给用户
     logger.info('Begin main loop...')
     while True:
@@ -145,24 +154,38 @@ def server() -> None:
         )
         current_trans = ecc.parse_consume_info()
 
-        # 过滤掉已经发送过通知的消费记录
-        new_trans = current_trans - trans_log
+        # 如果该循环第一次运行，就将获取到的消费记录直接存起来
+        # 在调试模式下则不进行此操作（因此可以查看最初的 10 条记录）
+        if not debug_mode and len(trans_log) == 0:
+            trans_log = current_trans.copy()
+
+        new_trans = sorted(
+            # 过滤掉已经发送过通知的消费记录
+            current_trans - trans_log,
+
+            # 按照消费时间排序，如果一样，则余额大的在前
+            key=lambda x: (x.op_timestamp, -x.balance))
         logger.debug(f'获得了 {len(current_trans)} 条交易记录, 其中 {len(new_trans)} 条为新记录')
 
+        # 为了防止洗澡等小额记录过多，合并细小的消费记录
+        # 为了不影响排重逻辑，应在服务器端存储原始消费记录，但是将合并的消费记录发送给用户
+        combined_trans = combine_continuous_small_transactions(new_trans)
+
         # 将多条新的消费记录发送给用户
-        for trans in new_trans:
+        # 使用 set 储存的 Transaction 可能是无序的，因此需要排序
+        for trans in combined_trans:
             logger.debug(f'发送 {trans.op_datetime} 的消费记录')
             tgbot.send_message(state_dao['tg_chat_id'], '\n'.join((
-                f'<b>校园卡支出 {trans.trans_amount} 元</b>',
+                f'<b>校园卡支出 {trans.trans_amount:.2f} 元</b>',
                 f'',
                 f'<b>时间：</b>{trans.op_datetime}',
                 f'<b>消费类别：</b>{trans.category}',
                 f'<b>位置：</b>{trans.location}',
                 f'',
-                f'<b>钱包余额：</b>{trans.balance} 元',
+                f'<b>钱包余额：</b>{trans.balance:.2f} 元',
             )))
 
-        # 将新获取的 Transaction 记入 trans_log 中
+        # 将新获取的、合并后的 Transaction 记入 trans_log 中
         trans_log.update(current_trans)
         logger.debug(f'trans_log 元素个数: {len(trans_log)}')
 
@@ -182,7 +205,7 @@ def main():
             deploy_bot()
         else:
             # 服务器模式
-            server()
+            server(args.debug)
     except KeyboardInterrupt:
         # 用户按下了 Ctrl+C
         pass
