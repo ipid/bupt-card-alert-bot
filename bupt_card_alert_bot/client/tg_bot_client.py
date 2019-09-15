@@ -164,9 +164,9 @@ class TgBotClient:
                 data=data,
             )
         except KeyboardInterrupt:
-            pass
-        except Exception as e:
-            raise AppError('无法访问 Telegram 服务器。') from e
+            raise KeyboardInterrupt
+        except:
+            raise AppError('无法访问 Telegram 服务器。')
 
         res = r.json()
 
