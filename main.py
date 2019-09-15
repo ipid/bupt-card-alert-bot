@@ -104,7 +104,7 @@ def deploy_bot() -> None:
     # 随机生成若干位数的“部署命令”。
     trigger_cmd = DEFAULT_DEPLOY_COMMAND + ' ' + ''.join(
         random.choices(string.ascii_letters + string.digits, k=DEPLOY_TRIGGER_STR_LEN))
-    logger.debug('Trigger command generated: ' + trigger_cmd)
+    logger.debug(f'生成了“部署命令”：{trigger_cmd}')
 
     # 轮询等待用户发送信息；
     # 当用户给 Bot 发送一模一样的指令时，将发送消息所在的 Chat 的 chat_id 记录下来。
@@ -138,7 +138,7 @@ def server(debug_mode: bool, startup_notify: bool) -> None:
     # trans_log 的值需要被修改
     global trans_log
 
-    logger.debug('running server')
+    logger.debug(f'服务器开始运行：server({debug_mode}, {startup_notify})')
 
     # 如果 Telegram Bot 没有部署则退出
     if not state_dao['tg_deployed']:

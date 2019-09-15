@@ -174,4 +174,4 @@ class TgBotClient:
             return res['result']
         else:
             logger.debug(f'res 不 OK。res = {res}')
-            raise AppError('Telegram API 调用错误：' + res['description'])
+            raise AppError(f'''Telegram API 调用错误：{res['description']}''')

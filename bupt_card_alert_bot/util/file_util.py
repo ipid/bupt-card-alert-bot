@@ -1,5 +1,8 @@
 __all__ = ('PathStatus', 'get_path_status',)
+import logging as pym_logging
 from pathlib import Path
+
+logger = pym_logging.getLogger(__name__)
 
 
 class PathStatus:
@@ -19,6 +22,7 @@ def get_path_status(path: str) -> int:
     :param path: 文件路径
     :return: PathStatus 的某个属性
     """
+    logger.debug(f'get_path_status({path})')
     path = Path(path)
 
     # 根据文件是否存在进行初始化逻辑

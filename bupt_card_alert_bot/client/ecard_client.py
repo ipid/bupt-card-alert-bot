@@ -82,6 +82,7 @@ class EcardClient:
         :param password: 密码1
         :return: None
         """
+        logger.debug('登录 Ecard')
         sess = self.sess_keep.sess
 
         # 填写表单
@@ -128,6 +129,7 @@ class EcardClient:
         :param lookup_date: 网站上的参数“起始日期”和“截止日期”，形如 2000-01-01
         :return: None
         """
+        logger.debug(f'lookup_consume_info(使用排序按钮={with_sort_button}, 查询日期={lookup_date})')
 
         # 填写查询表单（以下内容为通过抓包获取）
         form = self.__get_post_body_of_form()
@@ -182,7 +184,7 @@ class EcardClient:
                 continue
 
             if len(tr_data) != TR_DATA_EXPECTED_LENGTH:
-                logger.debug(f'res = {res}\ninfo_table = {str(info_table)}\ntr_data = {tr_data}')
+                logger.debug(f'消费记录爆炸。res = {res}\ninfo_table = {str(info_table)}\ntr_data = {tr_data}')
                 raise AppError(f'消费记录的列数为 {len(tr_data)}，'
                                f'与预设值 {TR_DATA_EXPECTED_LENGTH} 不同，可能是解析代码出错。')
 
@@ -210,7 +212,7 @@ class EcardClient:
 
         btn = self.last_soup.find(id='ContentPlaceHolder1_gridView_SortBt')
         if btn is None:
-            logger.debug(f'self.last_soup = {str(self.last_soup)}')
+            logger.debug(f'无法找到箭头按钮。self.last_soup = {str(self.last_soup)}')
             raise AppError('没找到箭头按钮（SortBt）。')
 
         class_name = btn.attrs['class'][0]
