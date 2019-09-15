@@ -1,6 +1,8 @@
 import argparse
+import gc
 import random
 import string
+from traceback import format_exc
 from typing import Set
 
 from bupt_card_alert_bot import *
@@ -87,6 +89,10 @@ def gc_trans_log(lookup_timedelta_days: int) -> None:
     logger.debug(f'GC：原有 {len(trans_log)} 条记录，'
                  f'保留时间戳 {del_timestamp_before} 之后的记录，余 {len(new_trans_log)} 条')
     trans_log = new_trans_log
+
+    # 释放内存
+    new_trans_log = None
+    gc.collect()
 
 
 # --- 以下为主程序的不同部分
@@ -228,7 +234,7 @@ def main():
     except Exception as e:
         # 如果产生异常，直接记日志并退出
         logger.exception(e)
-        tgbot.send_message(state_dao['tg_chat_id'], f'[ERROR] 服务器发生异常：{str(e)}')
+        tgbot.send_message(state_dao['tg_chat_id'], f'[ERROR] 服务器发生异常：\n{format_exc()}')
         exit(1)
 
 
