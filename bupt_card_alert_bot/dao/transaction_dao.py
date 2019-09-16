@@ -8,7 +8,7 @@ import json
 from typing import Iterable, Set
 
 from ..constant import *
-from ..exceptions import AppError
+from ..exceptions import AppFatalError
 from ..popo import Transaction
 from ..util import PathStatus, get_path_status
 
@@ -27,7 +27,7 @@ class TransactionDao:
         if ps == PathStatus.NOT_EXIST:
             self.reset_all()
         elif ps == PathStatus.UNREADABLE:
-            raise AppError(f'{file_path} 不是文件，无法覆盖或读取。')
+            raise AppFatalError(f'{file_path} 不是文件，无法覆盖或读取。')
 
     def reset_all(self) -> None:
         with open(self.__path, 'w', encoding=UNIFIED_ENCODING) as f:

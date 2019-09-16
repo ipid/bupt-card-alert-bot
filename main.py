@@ -161,7 +161,8 @@ def server(debug_mode: bool, startup_notify: bool) -> None:
     logger.info(f'Bot username: @{tgbot.get_bot_name()}')
 
     # 通知用户服务器已运行
-    tgbot.send_message(state_dao['tg_chat_id'], '[INFO] 服务器开始运行')
+    if startup_notify:
+        tgbot.send_message(state_dao['tg_chat_id'], '[INFO] 服务器开始运行', silent=True)
 
     # 循环获取消费记录，并通过 Bot 发送给用户
     logger.info('Begin main loop...')
@@ -234,7 +235,8 @@ def main():
     except Exception as e:
         # 如果产生异常，直接记日志并退出
         logger.exception(e)
-        tgbot.send_message(state_dao['tg_chat_id'], f'[ERROR] 服务器发生异常：\n{format_exc()}')
+        tgbot.send_message(state_dao['tg_chat_id'], f'[ERROR] 服务器发生异常：\n{format_exc()}',
+                           html=False, silent=True)
         exit(1)
 
 

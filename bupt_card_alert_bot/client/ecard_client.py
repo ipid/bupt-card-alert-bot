@@ -12,7 +12,7 @@ from typing import Optional, Tuple, Set, Dict, Any
 
 from bs4 import BeautifulSoup
 
-from ..exceptions import AppError
+from ..exceptions import AppFatalError
 from ..popo import SessionKeeper, EcardUserInfo, Transaction
 from ..util import get_begin_end_date, parse_ecard_date, log_resp
 
@@ -57,10 +57,10 @@ class EcardClient:
         resp = sess.get(url)
         if resp.status_code != 200:
             log_resp(logger, resp)
-            raise AppError(f'无法获取 URL {url}')
+            raise AppFatalError(f'无法获取 URL {url}')
         if validation is not None and validation not in resp.text:
             log_resp(logger, resp)
-            raise AppError(f'指定的内容「{validation}」无法在 {url} 中找到。')
+            raise AppFatalError(f'指定的内容「{validation}」无法在 {url} 中找到。')
 
         self.last_soup = BeautifulSoup(resp.text, 'html.parser')
         return resp
@@ -97,11 +97,11 @@ class EcardClient:
             data=form)
 
         if '账户或密码错误' in resp.text:
-            raise AppError('用户提供的 Ecard 用户名或密码错误，无法登录 Ecard 网站。')
+            raise AppFatalError('用户提供的 Ecard 用户名或密码错误，无法登录 Ecard 网站。')
 
         if not resp.url.endswith('Index.aspx'):
             log_resp(logger, resp)
-            raise AppError('无法登录 Ecard 网站。')
+            raise AppFatalError('无法登录 Ecard 网站。')
 
         self.last_soup = BeautifulSoup(resp.text, 'html.parser')
 
@@ -155,7 +155,7 @@ class EcardClient:
                          data=form)
         if '''User/ConsumeInfo.aspx'>消费信息查询</a>''' not in resp.text:
             log_resp(logger, resp)
-            raise AppError('消费信息查询失败')
+            raise AppFatalError('消费信息查询失败')
 
         self.last_soup = BeautifulSoup(resp.text, 'html.parser')
 
@@ -169,7 +169,7 @@ class EcardClient:
         info_table = form1.find(id='ContentPlaceHolder1_gridView')
         if info_table is None:
             logger.debug(f'form1 的 HTML: {str(info_table)}')
-            raise AppError('找不到存放消费记录的 <table>。')
+            raise AppFatalError('找不到存放消费记录的 <table>。')
         if 'class="gvNoRecords"' in str(info_table):
             # 网页弹出了提示“未查询到记录！”
             return set()
@@ -185,7 +185,7 @@ class EcardClient:
 
             if len(tr_data) != TR_DATA_EXPECTED_LENGTH:
                 logger.debug(f'消费记录爆炸。res = {res}\ninfo_table = {str(info_table)}\ntr_data = {tr_data}')
-                raise AppError(f'消费记录的列数为 {len(tr_data)}，'
+                raise AppFatalError(f'消费记录的列数为 {len(tr_data)}，'
                                f'与预设值 {TR_DATA_EXPECTED_LENGTH} 不同，可能是解析代码出错。')
 
             # 将原始数据存入 Transaction 对象，以方便使用
@@ -213,12 +213,12 @@ class EcardClient:
         btn = self.last_soup.find(id='ContentPlaceHolder1_gridView_SortBt')
         if btn is None:
             logger.debug(f'无法找到箭头按钮。self.last_soup = {str(self.last_soup)}')
-            raise AppError('没找到箭头按钮（SortBt）。')
+            raise AppFatalError('没找到箭头按钮（SortBt）。')
 
         class_name = btn.attrs['class'][0]
         if class_name != 'SortBt_Desc' and class_name != 'SortBt_Asc':
             logger.debug(f'btn = {str(btn)}\nclass_name = {class_name}')
-            raise AppError('箭头按钮（SortBt）的 class 属性异常。')
+            raise AppFatalError('箭头按钮（SortBt）的 class 属性异常。')
 
         return btn.attrs['class'] == 'SortBt_Desc'
 

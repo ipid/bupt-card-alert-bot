@@ -6,8 +6,8 @@ from typing import Optional, Dict, Any, Tuple
 
 import requests
 
-from ..constant import DEFAULT_TG_POLL_TIMEOUT
-from ..exceptions import AppError
+from ..constant import DEFAULT_TG_POLL_TIMEOUT, RETRY_TIMES
+from ..exceptions import AppFatalError
 
 logger = pym_logging.getLogger(__name__)
 
@@ -92,7 +92,7 @@ class TgBotClient:
                 update_id = update.get('update_id', None)
                 if update_id is None:
                     logger.debug(f'updates = {updates}')
-                    raise AppError('Telegram Bot API 错误：getUpdates 返回的 Update 对象没有 update_id')
+                    raise AppFatalError('Telegram Bot API 错误：getUpdates 返回的 Update 对象没有 update_id')
 
                 # 记录最大的 update_id
                 max_update_id = max(max_update_id, update_id)
@@ -111,21 +111,28 @@ class TgBotClient:
             # 根据 API 文档，offset 参数需比所收到最大的 update_id 大 1
             offset = max_update_id + 1
 
-    def send_message(self, chat_id: int, msg: str) -> None:
+    def send_message(self, chat_id: int, msg: str, html: bool = True, silent: bool = False) -> None:
         """
         通过该 Telegram Bot，在指定的 chat_id 内发送一条消息。
         方法调用者可以使用简单的 HTML 语法来发送粗体、斜体、等宽字体等格式。
         （parse_mode 为 HTML，具体请参考 Telegram Bot 文档）
         :param chat_id: Chat 的 chat_id
         :param msg: 消息内容
+        :param silent: 是否发送无声消息
+        :param html: 消息是否解析为 HTML
         :return: None
         """
-        self.call('sendMessage', {
+        param = {
             'chat_id': chat_id,
             'text': msg,
-            'parse_mode': 'HTML',
+            'disable_notification': silent,
             'disable_web_page_preview': True,
-        })
+        }
+
+        if html:
+            param['parse_mode'] = 'HTML'
+
+        self.call('sendMessage', param)
 
     def get_bot_name(self) -> Optional[str]:
         """
@@ -134,11 +141,11 @@ class TgBotClient:
         """
         res = self.call('getMe')
         if res.get('id', None) is None:
-            raise AppError('调用 getMe 方法错误，无法获取 Bot 信息。')
+            raise AppFatalError('调用 getMe 方法错误，无法获取 Bot 信息。')
 
         return res.get('username', None)
 
-    def call(self, method: str, param: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def call(self, method: str, param: Optional[Dict[str, Any]] = None) -> Any:
         """
         阻塞式调用 Telegram API。
         当远端 API 返回错误时，抛出 AppError。
@@ -154,19 +161,20 @@ class TgBotClient:
         else:
             data = None
 
-        try:
-            r = requests.post(
-                f'https://api.telegram.org/bot{self.token}/{method}',
-                headers={
-                    'Content-Type': 'application/json',
-                },
-                proxies=self.proxies,
-                data=data,
-            )
-        except KeyboardInterrupt:
-            raise KeyboardInterrupt
-        except:
-            raise AppError('无法访问 Telegram 服务器。')
+        for retry_count in range(RETRY_TIMES):
+            try:
+                r = requests.post(
+                    f'https://api.telegram.org/bot{self.token}/{method}',
+                    headers={
+                        'Content-Type': 'application/json',
+                    },
+                    proxies=self.proxies,
+                    data=data,
+                )
+            except KeyboardInterrupt:
+                raise KeyboardInterrupt
+            except:
+                raise AppFatalError('无法访问 Telegram 服务器。')
 
         res = r.json()
 
@@ -174,4 +182,4 @@ class TgBotClient:
             return res['result']
         else:
             logger.debug(f'res 不 OK。res = {res}')
-            raise AppError(f'''Telegram API 调用错误：{res['description']}''')
+            raise AppFatalError(f'''Telegram API 调用错误：{res['description']}''')

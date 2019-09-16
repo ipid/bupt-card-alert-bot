@@ -58,3 +58,8 @@ DEFAULT_MAIN_LOOP_INTERVAL = 120
 在“合并连续小消费”工具函数中，默认的 threshold 参数
 """
 COMBINE_AMOUNT: float = 1.0
+
+"""
+某个请求在彻底失败之前，应当重试多少次。
+"""
+RETRY_TIMES = 3

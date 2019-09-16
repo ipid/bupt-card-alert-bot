@@ -9,7 +9,7 @@ from typing import Optional
 import jsonschema
 
 from ..constant import *
-from ..exceptions import AppError
+from ..exceptions import AppFatalError
 
 
 class ConfigDao:
@@ -34,14 +34,14 @@ class ConfigDao:
             with open(config_filename, 'r', encoding=UNIFIED_ENCODING) as f:
                 conf = json.load(f)
         except:
-            raise AppError('配置文件读取失败。')
+            raise AppFatalError('配置文件读取失败。')
 
         try:
             # 验证配置文件格式是否正确
             jsonschema.validate(conf, CONFIG_SCHEMA)
         except jsonschema.ValidationError:
             # 如果格式不正确，抛出用户友好的错误信息
-            raise AppError('配置文件格式错误。')
+            raise AppFatalError('配置文件格式错误。')
 
         self.__conf = conf
 
@@ -52,7 +52,7 @@ class ConfigDao:
         :return: 配置内容（str）
         """
         if item not in CONFIG_VALID_PROPS:
-            raise AppError(f'配置名 {item} 不合法。')
+            raise AppFatalError(f'配置名 {item} 不合法。')
 
         if item not in self.__conf:
             return None
