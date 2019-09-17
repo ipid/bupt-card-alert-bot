@@ -253,8 +253,7 @@ def main() -> None:
             # 服务器模式
             run_server_forever(debug_mode=args.debug)
     except KeyboardInterrupt:
-        # 用户按下了 Ctrl+C
-        pass
+        logger.debug('run_server_forever 运行时发生了 KeyboardInterrupt')
     except Exception as e:
         # 如果产生异常，直接记日志并退出
         logger.exception(e)

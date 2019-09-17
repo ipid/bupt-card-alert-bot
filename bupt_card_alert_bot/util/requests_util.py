@@ -37,7 +37,7 @@ def retry_http(req_obj: Any, method: str, url: str,
             res = req_obj.request(method, url, **kwargs)
             break
         except KeyboardInterrupt:
-            logger.debug('KeyboardInterrupt during retry_http')
+            logger.debug('retry_http 运行时发生了 KeyboardInterrupt')
             exit(0)
         except Exception as e:
             # 记住最后一个 err 对象
