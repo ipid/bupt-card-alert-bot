@@ -82,8 +82,8 @@ class RetrySession:
     __slots__ = ('sess',)
 
     def __init__(self, sess: requests.Session):
-        if sess is None:
-            raise ValueError('sess 必须为非 None 的对象')
+        if sess is None or not isinstance(sess, requests.Session):
+            raise ValueError('sess 不能为 None，且必须为 Session 类型的对象')
 
         self.sess = sess
 
@@ -110,3 +110,10 @@ class RetrySession:
         :return: requests.Response
         """
         return retry_http(self.sess, 'post', url, retry_times=retry_times, **kwargs)
+
+    def cookies(self) -> Any:
+        """
+        返回 Session 对象的 cookies 属性。
+        :return: Any
+        """
+        return self.sess.cookies

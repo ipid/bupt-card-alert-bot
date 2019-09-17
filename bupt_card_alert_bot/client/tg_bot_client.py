@@ -1,14 +1,11 @@
 __all__ = ('TgBotClient',)
 
-import json
 import logging as pym_logging
 import math
 import time
 from typing import Optional, Dict, Any, Tuple
 
-import requests
-
-from ..constant import DEFAULT_TG_POLL_TIMEOUT, RETRY_TIMES
+from ..constant import DEFAULT_TG_POLL_TIMEOUT
 from ..exceptions import AppError
 from ..util import retry_post
 
@@ -159,8 +156,19 @@ class TgBotClient:
         """
         logger.debug(f'Telegram API call: {method}({param})')
 
-        r = retry_post(
+        req_resp = retry_post(
             f'https://api.telegram.org/bot{self.token}/{method}',
             proxies=self.proxies,
             json=param,
         )
+        res = req_resp.json()
+
+        # 无论 ok 值为 False，还是不存在 ok 值，都可以当成 False 处理
+        if res.get('ok', False):
+            tg_result = res.get('result', None)
+            if tg_result is None:
+                raise AppError('Telegram API 返回的 JSON 中没有 result 值。')
+            return tg_result
+        else:
+            logger.debug(f'res 不 OK。res = {res}')
+            raise AppError('Telegram API 调用错误：' + res.get('description', ''))

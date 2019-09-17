@@ -1,5 +1,5 @@
 __all__ = ('SessionKeeper',)
-from requests import Session
+from ..util import RetrySession
 
 
 class SessionKeeper:
@@ -9,8 +9,8 @@ class SessionKeeper:
     """
     __slots__ = ('sess',)
 
-    def __init__(self, session: Session):
-        if session is None:
-            raise ValueError('session 参数的值不能为 None。')
+    def __init__(self, session: RetrySession):
+        if session is None or not isinstance(session, RetrySession):
+            raise ValueError('session 参数的值不能为 None，且必须为 RetrySession 对象。')
 
         self.sess = session
