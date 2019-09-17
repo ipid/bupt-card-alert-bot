@@ -1,3 +1,5 @@
+__all__ = ('TgBotClient',)
+
 import json
 import logging as pym_logging
 import math
@@ -7,7 +9,8 @@ from typing import Optional, Dict, Any, Tuple
 import requests
 
 from ..constant import DEFAULT_TG_POLL_TIMEOUT, RETRY_TIMES
-from ..exceptions import AppFatalError
+from ..exceptions import AppError
+from ..util import retry_post
 
 logger = pym_logging.getLogger(__name__)
 
@@ -92,7 +95,7 @@ class TgBotClient:
                 update_id = update.get('update_id', None)
                 if update_id is None:
                     logger.debug(f'updates = {updates}')
-                    raise AppFatalError('Telegram Bot API 错误：getUpdates 返回的 Update 对象没有 update_id')
+                    raise AppError('Telegram Bot API 错误：getUpdates 返回的 Update 对象没有 update_id')
 
                 # 记录最大的 update_id
                 max_update_id = max(max_update_id, update_id)
@@ -141,7 +144,7 @@ class TgBotClient:
         """
         res = self.call('getMe')
         if res.get('id', None) is None:
-            raise AppFatalError('调用 getMe 方法错误，无法获取 Bot 信息。')
+            raise AppError('调用 getMe 方法错误，无法获取 Bot 信息。')
 
         return res.get('username', None)
 
@@ -156,30 +159,8 @@ class TgBotClient:
         """
         logger.debug(f'Telegram API call: {method}({param})')
 
-        if param is not None:
-            data = json.dumps(param)
-        else:
-            data = None
-
-        for retry_count in range(RETRY_TIMES):
-            try:
-                r = requests.post(
-                    f'https://api.telegram.org/bot{self.token}/{method}',
-                    headers={
-                        'Content-Type': 'application/json',
-                    },
-                    proxies=self.proxies,
-                    data=data,
-                )
-            except KeyboardInterrupt:
-                raise KeyboardInterrupt
-            except:
-                raise AppFatalError('无法访问 Telegram 服务器。')
-
-        res = r.json()
-
-        if res['ok']:
-            return res['result']
-        else:
-            logger.debug(f'res 不 OK。res = {res}')
-            raise AppFatalError(f'''Telegram API 调用错误：{res['description']}''')
+        r = retry_post(
+            f'https://api.telegram.org/bot{self.token}/{method}',
+            proxies=self.proxies,
+            json=param,
+        )

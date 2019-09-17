@@ -8,7 +8,7 @@ from copy import deepcopy
 from typing import Any
 
 from ..constant import *
-from ..exceptions import AppFatalError
+from ..exceptions import AppError
 from ..util import get_path_status, PathStatus
 
 STATES_AND_DEFAULTS = {
@@ -37,7 +37,7 @@ class StateDao:
             with open(path, 'r', encoding=UNIFIED_ENCODING) as f:
                 self.__conf = json.load(f)
         else:
-            raise AppFatalError(f'{path} 不是文件，无法覆盖或读取。')
+            raise AppError(f'{path} 不是文件，无法覆盖或读取。')
 
     def reset_all(self) -> None:
         """
@@ -63,7 +63,7 @@ class StateDao:
         :return: 内容（str）
         """
         if item not in STATES_AND_DEFAULTS:
-            raise AppFatalError(f'要访问的状态条目 {item} 不存在。')
+            raise AppError(f'要访问的状态条目 {item} 不存在。')
         return self.__conf[item]
 
     def __setitem__(self, key: str, value: Any) -> None:
@@ -74,7 +74,7 @@ class StateDao:
         :return: None
         """
         if key not in STATES_AND_DEFAULTS:
-            raise AppFatalError(f'要设置的状态条目 {key} 不存在。')
+            raise AppError(f'要设置的状态条目 {key} 不存在。')
 
         self.__conf[key] = value
         self.__persist()

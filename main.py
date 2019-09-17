@@ -1,9 +1,13 @@
 import argparse
 import gc
+import logging as pym_logging
 import random
 import string
+import time
 from traceback import format_exc
 from typing import Set
+
+import requests
 
 from bupt_card_alert_bot import *
 
@@ -17,7 +21,8 @@ argp.add_argument('--debug', action='store_true',
 sess = requests.Session()
 
 # 初始化当前应用中的类
-sess_keep = SessionKeeper(sess)
+retry_sess = RetrySession(sess)
+sess_keep = SessionKeeper(retry_sess)
 config_dao = ConfigDao()
 trans_dao = TransactionDao()
 vpc = VpnClient(sess_keep)
@@ -135,7 +140,6 @@ def deploy_bot() -> None:
 def server(debug_mode: bool, startup_notify: bool) -> None:
     """
     服务器模式。该模式下本应用长时间运行。
-    TODO: 处理第三方库产生的异常
     :param debug_mode: 是否进入调试模式（可能改变部分行为）
     :param startup_notify: 服务器启动时是否通知用户
     :return: None
@@ -220,7 +224,26 @@ def server(debug_mode: bool, startup_notify: bool) -> None:
 
 
 # --- 以下为主函数
-def main():
+
+def run_server_forever(debug_mode: bool) -> None:
+    """
+    运行 server 函数，并捕捉其抛出的每一个 AppError。
+    :param debug_mode: 参见 server 函数的文档
+    :return: None
+    """
+    # 该变量值第一次运行时为真，之后全为假
+    startup_notify = True
+
+    # 若发生 AppError 以外的异常，则直接抛出
+    while True:
+        try:
+            server(debug_mode, startup_notify)
+        except AppError:
+            # 从第二次执行前开始设为假
+            startup_notify = False
+
+
+def main() -> None:
     args = argp.parse_args()
     try:
         if args.deploy:
@@ -228,7 +251,7 @@ def main():
             deploy_bot()
         else:
             # 服务器模式
-            server(debug_mode=args.debug, startup_notify=False)
+            run_server_forever(debug_mode=args.debug)
     except KeyboardInterrupt:
         # 用户按下了 Ctrl+C
         pass

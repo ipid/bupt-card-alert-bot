@@ -3,6 +3,7 @@ __all__ = ('initialize_logger', 'log_resp')
 import json
 import logging
 import sys
+import requests
 
 from ..constant import *
 
@@ -28,7 +29,7 @@ def initialize_logger(logger: logging.Logger, log_file: str = DEFAULT_LOG_PATH) 
     logger.addHandler(fh)
 
 
-def log_resp(logger: logging.Logger, resp) -> None:
+def log_resp(logger: logging.Logger, resp: requests.Response) -> None:
     """
     在日志中记录关于 request.get/post() 的返回值 resp 的信息。
     :param logger: 所需的 logger 对象

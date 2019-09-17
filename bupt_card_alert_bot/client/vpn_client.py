@@ -7,7 +7,7 @@ __all__ = ('VpnClient',)
 
 import logging as pym_logging
 
-from ..exceptions import AppFatalError
+from ..exceptions import AppError
 from ..popo import SessionKeeper
 from ..util import fix_response_encoding, log_resp
 
@@ -43,9 +43,9 @@ class VpnClient:
         logger.debug(f'sess.cookies = {str(sess.cookies)}')
 
         if sess.cookies is None:
-            raise AppFatalError('无法获取 PHPSESSID')
+            raise AppError('无法获取 PHPSESSID')
         if 'PHPSESSID' not in sess.cookies:
-            raise AppFatalError('无法获取 PHPSESSID')
+            raise AppError('无法获取 PHPSESSID')
 
     def login(self, username: str, password: str) -> None:
         logger.debug('登录 webvpn')
@@ -65,9 +65,9 @@ class VpnClient:
         # 检测 GP_SESSION_CK 是否在 cookies 中，如果存在说明登录成功
         if 'GP_SESSION_CK' not in sess.cookies:
             logger.debug(f'sess.cookies = {str(sess.cookies)}, resp.url = {resp.url}')
-            raise AppFatalError('登录失败（未获取到 GP_SESSION_CK），可能是用户名或密码错误。')
+            raise AppError('登录失败（未获取到 GP_SESSION_CK），可能是用户名或密码错误。')
 
         if username not in resp.text or '客户端下载' not in resp.text:
             logger.debug(f'sess.cookies = {str(sess.cookies)}, resp.url = {resp.url}')
             log_resp(logger, resp)
-            raise AppFatalError('登录失败（未成功进入登录后页面），可能是用户名或密码错误。')
+            raise AppError('登录失败（未成功进入登录后页面），可能是用户名或密码错误。')
