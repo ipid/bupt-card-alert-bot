@@ -130,7 +130,7 @@ def deploy_bot() -> None:
         state_dao['tg_deployed'] = True
         state_dao['tg_chat_id'] = chat_id
 
-        tgbot.send_message(chat_id, '[INFO] Bot 成功部署。')
+        tgbot.send_message(chat_id, '[INFO] Bot 成功部署。', silent=True, html=False)
         logger.info(f'Telegram is successfully deployed. Chat id: {chat_id}')
     else:
         # “等待指定消息”超时，未获取到 chat_id，部署失败
