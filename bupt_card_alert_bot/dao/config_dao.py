@@ -1,5 +1,5 @@
 """
-提供 ConfigDao 类和单例的 config_dao 实例。
+提供 ConfigDao 类。
 """
 __all__ = ('ConfigDao',)
 

@@ -16,7 +16,7 @@ from ..util import PathStatus, get_path_status
 class TransactionDao:
     """
     负责持久化读写“已经发送过通知的消费记录”（Transaction 对象）。
-    由于写次数大于读次数，该类不设内存缓存。
+    TODO: 使用 SQLite 等数据库
     """
     __slots__ = ('__path',)
 

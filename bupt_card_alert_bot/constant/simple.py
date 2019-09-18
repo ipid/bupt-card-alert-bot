@@ -32,7 +32,7 @@ DEFAULT_ECARD_TIMEDELTA = 1
 """
 部署 Telegram Bot 的指令。
 """
-DEFAULT_DEPLOY_COMMAND = '/ecard_deploy'
+DEFAULT_DEPLOY_COMMAND: str = '/ecard_deploy'
 
 """
 设置部署指令时，需要发送给 Bot 的随机字符串的长度。 
@@ -63,3 +63,8 @@ COMBINE_AMOUNT: float = 1.0
 某个请求在彻底失败之前，应当重试多少次。
 """
 RETRY_TIMES = 3
+
+"""
+随机生成的 trigger_cmd 的字母表。
+"""
+TRIGGER_CMD_ALPHABET: str = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'

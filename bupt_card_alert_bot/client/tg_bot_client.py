@@ -13,9 +13,18 @@ logger = pym_logging.getLogger(__name__)
 
 
 class TgBotClient:
+    """
+    Telegram Bot 客户端类。
+    提供接收消息、发送消息等功能。
+    """
     __slots__ = ('token', 'proxies')
 
     def __init__(self, bot_token: str, proxy_url: Optional[str] = None) -> None:
+        """
+        初始化 Telegram Bot 客户端类。
+        :param bot_token: Bot 的 API Token，可以通过 @BotFather 获取
+        :param proxy_url: 如果要使用代理，可以从此参数传入
+        """
         self.token = bot_token
         if proxy_url is None:
             self.proxies = None
@@ -47,9 +56,11 @@ class TgBotClient:
             return None
 
         chat_id, update_id = res
+
+        # 通过超时时间为 0 的短查询，将所收到的 wait_msg 这条消息及之前的消息标记为已收到
+        # 避免再次使用本类时重复收到同一条消息
         self.call('getUpdates', {
             'timeout': 0,
-            # 将所收到的消息视作已确认，避免重复收到同一条消息
             'offset': update_id + 1,
         })
 
@@ -58,10 +69,11 @@ class TgBotClient:
     def __msg_polling_loop(self, wait_msg: str, timeout: int, strip_msg: bool) -> Optional[Tuple[int, int]]:
         """
         通过 Bot API 获取消息的循环。
+        该函数调用 Telegram 的 getUpdates 方法，如果发现收到的消息并不是 wait_msg，就循环再次获取。
+
         :param wait_msg: 见 wait_for_specific_message 方法
         :param timeout: 见 wait_for_specific_message 方法
         :param strip_msg: 见 wait_for_specific_message 方法
-        :param
         :return: 元组：对应 wait_msg 的 (chat_id, update_id)
         """
 
@@ -114,7 +126,7 @@ class TgBotClient:
     def send_message(self, chat_id: int, msg: str, html: bool = True, silent: bool = False) -> None:
         """
         通过该 Telegram Bot，在指定的 chat_id 内发送一条消息。
-        方法调用者可以使用简单的 HTML 语法来发送粗体、斜体、等宽字体等格式。
+        当 html 参数为 True 时，方法调用者可以使用简单的 HTML 语法来发送粗体、斜体、等宽字体等格式。
         （parse_mode 为 HTML，具体请参考 Telegram Bot 文档）
         :param chat_id: Chat 的 chat_id
         :param msg: 消息内容
@@ -136,7 +148,7 @@ class TgBotClient:
 
     def get_bot_name(self) -> Optional[str]:
         """
-        调用 Telegram Bot 的 getMe 方法。用于测试 token 是否正确。
+        调用 Telegram Bot 的 getMe 方法。一般用于测试 token 是否正确/是否能连接 Telegram 服务器。
         :return: 当前 bot 的个人信息。
         """
         res = self.call('getMe')

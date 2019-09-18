@@ -1,14 +1,12 @@
-'''
-    本文件引入 EcardSpider 类。
-    该类负责向后端（webvpn-ecard）发送「登录」、「查询消费记录」等请求。
-    该类初始化时需要一个（临时性的）vpn.bupt.edu.cn 的 Cookie。
-'''
+"""
+本文件引入 EcardSpider 类。
+"""
 
 __all__ = ('EcardClient',)
 
 import logging as pym_logging
 import re
-from typing import Optional, Tuple, Set, Dict, Any
+from typing import Optional, Tuple, Set, Dict
 
 import requests
 from bs4 import BeautifulSoup
@@ -29,6 +27,7 @@ TR_DATA_EXPECTED_LENGTH = 7
 class EcardClient:
     """
     ecard.bupt.edu.cn 的客户端。
+    该类负责向后端（webvpn-ecard）发送「登录」、「查询消费记录」等请求。
 
     该类遵守类似无头浏览器（如 Selenium）的逻辑。
 
@@ -38,6 +37,10 @@ class EcardClient:
     __slots__ = ('sess_keep', 'last_soup')
 
     def __init__(self, sess_keep: SessionKeeper) -> None:
+        """
+        初始化 EcardClient 类。
+        :param sess_keep: 存有 RetrySession 实例的 POPO，最好与 VpnClient 使用同一个。
+        """
         if sess_keep.sess is None:
             raise ValueError('sess_keep 内必须有已初始化的 Session。')
 

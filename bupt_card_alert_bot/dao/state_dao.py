@@ -1,5 +1,5 @@
 """
-提供 StateDao 单例对象。
+提供 StateDao 类。
 """
 __all__ = ('StateDao',)
 

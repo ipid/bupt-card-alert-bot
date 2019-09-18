@@ -10,7 +10,7 @@ tz_beijing = timezone(timedelta(hours=8))
 
 def get_begin_end_date(days: int = DEFAULT_ECARD_TIMEDELTA) -> Tuple[str, str]:
     """
-    计算当前时区下的 days 天前的日期和今天日期，作为查询时所使用的开始和结束日期。
+    计算北京时间下的 days 天前的日期和今天日期，作为查询时所使用的开始和结束日期。
     :param days: 天数之差
     :return: (days 天前的日期, 今天日期)
     """
@@ -22,7 +22,7 @@ def get_begin_end_date(days: int = DEFAULT_ECARD_TIMEDELTA) -> Tuple[str, str]:
 
 def parse_ecard_date(ecard_date: str) -> int:
     """
-    解析 ecard 信息查询网页返回的日期。
+    解析 ecard 信息查询网页返回的日期，假设其为北京时间。
     返回 Unix 时间戳。
 
     :param ecard_date: 形如：2019/9/12 22:52:18 的日期
@@ -35,7 +35,7 @@ def parse_ecard_date(ecard_date: str) -> int:
 
 def timestamp_now() -> int:
     """
-    返回当前的 Unix 时间戳（秒）。
-    :return: Unix 时间戳（秒）
+    返回当前的 Unix 时间戳（秒，整数）。
+    :return: Unix 时间戳（秒，整数）
     """
     return int(time.time())

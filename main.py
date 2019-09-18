@@ -5,7 +5,7 @@ import random
 import string
 import time
 from traceback import format_exc
-from typing import Set
+from typing import Set, Optional
 
 import requests
 
@@ -41,7 +41,7 @@ logger.debug(f'初始消费记录：{trans_log}')
 # --- 以下定义各工具函数
 def vpn_ecard_login() -> None:
     """
-    调用 VpnClient 与 EcardClient 类，使其处于已登录状态。
+    调用 VpnClient 与 EcardClient 类的 login 方法，使其处于已登录状态。
     :return: None
     """
     vpc.login(
@@ -74,7 +74,8 @@ def print_user_info() -> None:
 
 def gc_trans_log(lookup_timedelta_days: int) -> None:
     """
-    清除 trans_log 中旧的消费记录。该函数保证删除的消费记录比查询时的“起始日期”更早。
+    清除 trans_log 中旧的消费记录。
+    该函数保证删除的消费记录比查询时的“起始日期”更早。
     :param lookup_timedelta_days: 在 ecard 网站上查询时，最大的“起始时间”距离今天的天数
     :return: None
     """
@@ -96,7 +97,6 @@ def gc_trans_log(lookup_timedelta_days: int) -> None:
     trans_log = new_trans_log
 
     # 释放内存
-    new_trans_log = None
     gc.collect()
 
 
@@ -104,6 +104,8 @@ def gc_trans_log(lookup_timedelta_days: int) -> None:
 def deploy_bot() -> None:
     """
     部署 Telegram Bot。
+    该函数首先生成随机的部署命令，然后轮询等待用户发送这条命令；
+    收到此命令后，将发送该命令的 chat id 持久化，以便之后将消费记录发送到此 chat id。
     :return: None
     """
     logger.info(f'Deploying bot: @{tgbot.get_bot_name()}')
@@ -113,8 +115,7 @@ def deploy_bot() -> None:
         logger.info('The bot is already deployed. However you can overwrite previous deployment.\n')
 
     # 随机生成若干位数的“部署命令”。
-    trigger_cmd = DEFAULT_DEPLOY_COMMAND + ' ' + ''.join(
-        random.choices(string.ascii_letters + string.digits, k=DEPLOY_TRIGGER_STR_LEN))
+    trigger_cmd = random_trigger_cmd()
     logger.debug(f'生成了“部署命令”：{trigger_cmd}')
 
     # 轮询等待用户发送信息；
@@ -125,13 +126,14 @@ def deploy_bot() -> None:
 
     chat_id = tgbot.wait_for_specific_message(trigger_cmd)
     if chat_id is not None:
+        # 收到了用户发送的消息，于是持久化 chat_id
         state_dao['tg_deployed'] = True
         state_dao['tg_chat_id'] = chat_id
 
         tgbot.send_message(chat_id, '[INFO] Bot 成功部署。')
         logger.info(f'Telegram is successfully deployed. Chat id: {chat_id}')
     else:
-        # “等待指定消息”超时，未获取到 chat_id
+        # “等待指定消息”超时，未获取到 chat_id，部署失败
         logger.warning('Failed to receive the command above. Advise:')
         print('1) Ensure you send exactly the same text to the bot.')
         print('''2) Double-check whether your api token corresponds to your bot's name.''')
@@ -139,7 +141,14 @@ def deploy_bot() -> None:
 
 def server(debug_mode: bool, startup_notify: bool) -> None:
     """
-    服务器模式。该模式下本应用长时间运行。
+    实现该服务器 App 主要逻辑的函数。
+    该函数首先登录 vpn 和 ecard 网站，然后循环进行如下操作：
+        获取消费记录；
+        排除重复的消费记录；
+        合并消费记录并发给用户；
+        将原始消费记录持久化；
+        休眠一段时间；
+
     :param debug_mode: 是否进入调试模式（可能改变部分行为）
     :param startup_notify: 服务器启动时是否通知用户
     :return: None
@@ -182,7 +191,7 @@ def server(debug_mode: bool, startup_notify: bool) -> None:
         current_trans = ecc.parse_consume_info()
 
         # 如果该循环第一次运行，就将获取到的消费记录直接存起来
-        # 在调试模式下则不进行此操作（因此可以查看最初的 10 条记录）
+        # 在调试模式下则不进行此操作（因此可以通过 Bot 收到今天的若干条记录）
         if not debug_mode and len(trans_log) == 0:
             trans_log = current_trans.copy()
 
@@ -228,6 +237,8 @@ def server(debug_mode: bool, startup_notify: bool) -> None:
 def run_server_forever(debug_mode: bool) -> None:
     """
     运行 server 函数，并捕捉其抛出的每一个 AppError。
+    该函数只拦截 AppError。AppError 以外的错误将被抛出。
+
     :param debug_mode: 参见 server 函数的文档
     :return: None
     """
@@ -237,13 +248,20 @@ def run_server_forever(debug_mode: bool) -> None:
     # 若发生 AppError 以外的异常，则直接抛出
     while True:
         try:
+            # 永久循环，持续调用 server 函数
             server(debug_mode, startup_notify)
         except AppError:
-            # 从第二次执行前开始设为假
+            logger.debug(f'产生了可恢复的异常：{format_exc()}')
+
+            # 从第二次执行前开始，将启动通知设为假
             startup_notify = False
 
 
 def main() -> None:
+    """
+    程序的主入口。
+    :return: None
+    """
     args = argp.parse_args()
     try:
         if args.deploy:
