@@ -68,3 +68,9 @@ RETRY_TIMES = 3
 随机生成的 trigger_cmd 的字母表。
 """
 TRIGGER_CMD_ALPHABET: str = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+
+"""
+默认的 HTTP 请求的超时时间。两个数字分别为连接超时、读取字节超时。
+详情参考 requests v2.22.0 的文档。
+"""
+DEFAULT_REQ_TIMEOUT = (3.6, 30.0)

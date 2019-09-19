@@ -38,6 +38,7 @@ def log_resp(logger: logging.Logger, resp: requests.Response) -> None:
     """
 
     logger.debug(f'resp = {{\n'
+                 f'    url: {resp.url},\n'
                  f'    status_code: {resp.status_code},\n'
                  f'    headers: {resp.headers},\n'
                  f'    text: {json.dumps(resp.text)},\n'

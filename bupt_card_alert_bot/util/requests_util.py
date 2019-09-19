@@ -1,11 +1,12 @@
 __all__ = ('fix_response_encoding', 'RetrySession', 'retry_get', 'retry_post')
 import logging as pym_logging
 from typing import Any
+from typing import Tuple
 
 import chardet
 import requests
 
-from ..constant import RETRY_TIMES
+from ..constant import *
 from ..exceptions import AppError
 
 DUMMY_OBJ = object()
@@ -25,16 +26,29 @@ def fix_response_encoding(resp: requests.Response) -> None:
     resp.encoding = res['encoding']
 
 
-def retry_http(req_obj: Any, method: str, url: str,
-               retry_times: int, **kwargs) -> requests.Response:
-    # 使用唯一的 object 作为判断值是否改变的标准
+def retry_http(req_obj: Any, method: str, url: str, retry_times: int,
+               timeout: Tuple[float, float], **kwargs) -> requests.Response:
+    """
+    内部函数，外部代码不应使用。将与出错重试相关的代码抽象成了一个函数。
+    该函数重复调用 retry_times 次 requests 的 API，如果成功执行则退出循环，否则抛出 AppError，
+    将最后一次循环捕捉到的异常作为其 cause 属性。
+
+    :param req_obj: 拥有 request 方法，使用方法类似 requests 的对象（如 Session）
+    :param method: HTTP 方法（GET、POST 等）
+    :param url: URL
+    :param retry_times: 最大重试次数
+    :param timeout: 超时时间（使用默认即可，参考 requests 文档）
+    :param kwargs: 其它参数（参考 requests 文档）
+    :return: requests.Response
+    """
+    # 声明变量。使用唯一的 object 作为判断值是否改变的标准
     err, res = None, DUMMY_OBJ
 
     # 尝试重复运行 requests API
     for retry_count in range(retry_times):
         try:
             # 如果成功运行，就退出循环，否则继续循环
-            res = req_obj.request(method, url, **kwargs)
+            res = req_obj.request(method, url, timeout=timeout, **kwargs)
             break
         except KeyboardInterrupt:
             logger.debug('retry_http 运行时发生了 KeyboardInterrupt')
@@ -49,30 +63,34 @@ def retry_http(req_obj: Any, method: str, url: str,
     return res
 
 
-def retry_get(url: str, retry_times=RETRY_TIMES, **kwargs) -> requests.Response:
+def retry_get(url: str, retry_times=RETRY_TIMES,
+              timeout: Tuple[float, float] = DEFAULT_REQ_TIMEOUT, **kwargs) -> requests.Response:
     """
     有重试地调用 requests 的 get 方法。
     当出错时，抛出 IOError。
 
     :param url: URL
     :param retry_times: 最大重试次数
+    :param timeout: 超时时间（使用默认即可，参考 requests 文档）
     :param kwargs: 其它参数（参考 requests 文档）
     :return: requests.Response
     """
-    return retry_http(requests, 'get', url, retry_times, **kwargs)
+    return retry_http(requests, 'get', url, retry_times, timeout, **kwargs)
 
 
-def retry_post(url: str, retry_times=RETRY_TIMES, **kwargs) -> requests.Response:
+def retry_post(url: str, retry_times=RETRY_TIMES,
+               timeout: Tuple[float, float] = DEFAULT_REQ_TIMEOUT, **kwargs) -> requests.Response:
     """
     有重试地调用 requests 的 post 方法。
     当出错时，抛出 IOError。
 
     :param url: URL
     :param retry_times: 最大重试次数
+    :param timeout: 超时时间（使用默认即可，参考 requests 文档）
     :param kwargs: 其它参数（参考 requests 文档）
     :return: requests.Response
     """
-    return retry_http(requests, 'post', url, retry_times, **kwargs)
+    return retry_http(requests, 'post', url, retry_times, timeout, **kwargs)
 
 
 class RetrySession:
@@ -87,7 +105,8 @@ class RetrySession:
 
         self.sess = sess
 
-    def get(self, url: str, retry_times=RETRY_TIMES, **kwargs) -> requests.Response:
+    def get(self, url: str, retry_times=RETRY_TIMES,
+            timeout: Tuple[float, float] = DEFAULT_REQ_TIMEOUT, **kwargs) -> requests.Response:
         """
         有重试地调用 requests 的 get 方法。
         当出错时，抛出 IOError。
@@ -97,9 +116,11 @@ class RetrySession:
         :param kwargs: 其它参数（参考 requests 文档）
         :return: requests.Response
         """
-        return retry_http(self.sess, 'get', url, retry_times=retry_times, **kwargs)
+        return retry_http(self.sess, 'get', url, retry_times=retry_times,
+                          timeout=timeout, **kwargs)
 
-    def post(self, url: str, retry_times=RETRY_TIMES, **kwargs) -> requests.Response:
+    def post(self, url: str, retry_times=RETRY_TIMES,
+             timeout: Tuple[float, float] = DEFAULT_REQ_TIMEOUT, **kwargs) -> requests.Response:
         """
         有重试地调用 requests 的 post 方法。
         当出错时，抛出 IOError。
@@ -109,7 +130,8 @@ class RetrySession:
         :param kwargs: 其它参数（参考 requests 文档）
         :return: requests.Response
         """
-        return retry_http(self.sess, 'post', url, retry_times=retry_times, **kwargs)
+        return retry_http(self.sess, 'post', url, retry_times=retry_times,
+                          timeout=timeout, **kwargs)
 
     def cookies(self) -> Any:
         """

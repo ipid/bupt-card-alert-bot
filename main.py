@@ -1,11 +1,9 @@
 import argparse
 import gc
 import logging as pym_logging
-import random
-import string
 import time
 from traceback import format_exc
-from typing import Set, Optional
+from typing import Set
 
 import requests
 
@@ -72,7 +70,7 @@ def print_user_info() -> None:
     )
 
 
-def gc_trans_log(lookup_timedelta_days: int) -> None:
+def gc_trans_log(lookup_timedelta_days: int = DEFAULT_ECARD_TIMEDELTA) -> None:
     """
     清除 trans_log 中旧的消费记录。
     该函数保证删除的消费记录比查询时的“起始日期”更早。
@@ -157,7 +155,7 @@ def server(debug_mode: bool, startup_notify: bool) -> None:
     # trans_log 的值需要被修改
     global trans_log
 
-    logger.debug(f'服务器开始运行：server({debug_mode}, {startup_notify})')
+    logger.debug(f'服务器开始运行：server(debug_mode={debug_mode}, startup_notify={startup_notify})')
 
     # 如果 Telegram Bot 没有部署则退出
     if not state_dao['tg_deployed']:
@@ -185,18 +183,14 @@ def server(debug_mode: bool, startup_notify: bool) -> None:
         # 发送请求，查询消费记录
         ecc.goto_consume_info_page()
         ecc.lookup_consume_info(
-            lookup_date=get_begin_end_date(DEFAULT_ECARD_TIMEDELTA),
+            lookup_date=get_begin_end_date(),
             with_sort_button=not ecc.is_sort_button_desc(),
         )
         current_trans = ecc.parse_consume_info()
 
-        # 如果该循环第一次运行，就将获取到的消费记录直接存起来
-        # 在调试模式下则不进行此操作（因此可以通过 Bot 收到今天的若干条记录）
-        if not debug_mode and len(trans_log) == 0:
-            trans_log = current_trans.copy()
-
+        # 计算哪些是新产生的消费记录
         new_trans = sorted(
-            # 过滤掉已经发送过通知的消费记录
+            # 使用集合操作，过滤掉已经发送过通知的消费记录
             current_trans - trans_log,
 
             # 按照消费时间排序，如果一样，则余额大的在前
@@ -222,14 +216,14 @@ def server(debug_mode: bool, startup_notify: bool) -> None:
 
         # 将新获取的、合并后的 Transaction 记入 trans_log 中
         trans_log.update(current_trans)
+
+        # 清理旧的消费记录缓存，然后持久化 trans_log
+        gc_trans_log()
         trans_dao.store_transactions(trans_log)
         logger.debug(f'成功持久化 trans_log。trans_log 元素个数: {len(trans_log)}')
 
         # 循环不能高速执行，否则会遭到学校反爬
         time.sleep(DEFAULT_MAIN_LOOP_INTERVAL)
-
-        # 清理旧的消费记录缓存
-        gc_trans_log(DEFAULT_ECARD_TIMEDELTA)
 
 
 # --- 以下为主函数
