@@ -1,11 +1,15 @@
 __all__ = ('initialize_logger', 'log_resp')
 
+import datetime
 import json
 import logging
 import sys
+from logging import handlers
+
 import requests
 
 from ..constant import *
+from ..util import tz_beijing
 
 
 def initialize_logger(logger: logging.Logger, log_file: str = DEFAULT_LOG_PATH) -> None:
@@ -23,10 +27,15 @@ def initialize_logger(logger: logging.Logger, log_file: str = DEFAULT_LOG_PATH) 
     sh.setFormatter(logging.Formatter('[%(levelname)s] %(message)s'))
     logger.addHandler(sh)
 
-    fh = logging.FileHandler(log_file, encoding=UNIFIED_ENCODING)
-    fh.setLevel(logging.DEBUG)
-    fh.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
-    logger.addHandler(fh)
+    # 按照日期命名日志，并定期删除老日志，防止日志过大
+    trfh = handlers.TimedRotatingFileHandler(
+        log_file, when='midnight', backupCount=7, encoding='utf-8',
+        # 在每天的北京时间 0 点滚日志
+        utc=True, atTime=datetime.time(tzinfo=tz_beijing)
+    )
+    trfh.setLevel(logging.DEBUG)
+    trfh.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    logger.addHandler(trfh)
 
 
 def log_resp(logger: logging.Logger, resp: requests.Response) -> None:
@@ -36,7 +45,6 @@ def log_resp(logger: logging.Logger, resp: requests.Response) -> None:
     :param resp: request.get/post() 的返回值
     :return:
     """
-
     logger.debug(f'resp = {{\n'
                  f'    url: {resp.url},\n'
                  f'    status_code: {resp.status_code},\n'

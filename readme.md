@@ -1,6 +1,8 @@
 ## 北邮校园卡消费记录通知机器人
 
-项目介绍将于今日完善。
+The bot is now testing in production. Use it with causion.
+
+此 Bot 正通过生产环境来测试代码，请谨慎使用。
 
 
 

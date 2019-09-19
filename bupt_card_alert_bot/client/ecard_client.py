@@ -13,7 +13,8 @@ from bs4 import BeautifulSoup
 
 from ..exceptions import AppError
 from ..popo import SessionKeeper, EcardUserInfo, Transaction
-from ..util import get_begin_end_date, parse_ecard_date, log_resp
+from ..util import get_begin_end_date, parse_ecard_date
+from ..service import log_resp
 
 logger = pym_logging.getLogger('bupt_card_alert_bot.client.ecard_client')
 

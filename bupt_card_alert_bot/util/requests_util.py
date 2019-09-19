@@ -33,7 +33,7 @@ def retry_http(req_obj: Any, method: str, url: str, retry_times: int,
     该函数重复调用 retry_times 次 requests 的 API，如果成功执行则退出循环，否则抛出 AppError，
     将最后一次循环捕捉到的异常作为其 cause 属性。
 
-    :param req_obj: 拥有 request 方法，使用方法类似 requests 的对象（如 Session）
+    :param req_obj: 拥有 request 方法，使用方式类似 requests 的对象（如 Session）
     :param method: HTTP 方法（GET、POST 等）
     :param url: URL
     :param retry_times: 最大重试次数
@@ -113,6 +113,7 @@ class RetrySession:
 
         :param url: URL
         :param retry_times: 最大重试次数
+        :param timeout: 超时时间（使用默认即可，参考 requests 文档）
         :param kwargs: 其它参数（参考 requests 文档）
         :return: requests.Response
         """
@@ -127,6 +128,7 @@ class RetrySession:
 
         :param url: URL
         :param retry_times: 最大重试次数
+        :param timeout: 超时时间（使用默认即可，参考 requests 文档）
         :param kwargs: 其它参数（参考 requests 文档）
         :return: requests.Response
         """

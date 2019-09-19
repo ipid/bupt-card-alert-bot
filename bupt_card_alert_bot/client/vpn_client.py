@@ -9,7 +9,8 @@ import logging as pym_logging
 
 from ..exceptions import AppError
 from ..popo import SessionKeeper
-from ..util import fix_response_encoding, log_resp
+from ..util import fix_response_encoding
+from ..service import log_resp
 
 logger = pym_logging.getLogger(__name__)
 

@@ -1,4 +1,4 @@
-__all__ = ('get_begin_end_date', 'parse_ecard_date', 'timestamp_now')
+__all__ = ('get_begin_end_date', 'parse_ecard_date', 'timestamp_now', 'tz_beijing')
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Tuple
