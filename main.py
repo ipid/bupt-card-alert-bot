@@ -188,6 +188,11 @@ def server(debug_mode: bool, startup_notify: bool) -> None:
         )
         current_trans = ecc.parse_consume_info()
 
+        # 如果该循环第一次运行，就将获取到的消费记录直接存起来
+        # 在调试模式下则不进行此操作（因此初次部署时可以查看最初的 10 条记录）
+        if not debug_mode and len(trans_log) == 0:
+            trans_log = current_trans.copy()
+
         # 计算哪些是新产生的消费记录
         new_trans = sorted(
             # 使用集合操作，过滤掉已经发送过通知的消费记录
