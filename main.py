@@ -228,7 +228,7 @@ def server(debug_mode: bool, startup_notify: bool) -> None:
         logger.debug(f'成功持久化 trans_log。trans_log 元素个数: {len(trans_log)}')
 
         # 循环不能高速执行，否则会遭到学校反爬
-        time.sleep(DEFAULT_MAIN_LOOP_INTERVAL)
+        time.sleep(get_reasonable_interval())
 
 
 # --- 以下为主函数

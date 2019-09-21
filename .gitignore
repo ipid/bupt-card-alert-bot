@@ -4,5 +4,6 @@ __transactions.json
 /**/__pycache__
 /**/.idea
 /**/*.log
+/**/*.log.*
 /**/.mypy_cache
 *.ipynb
