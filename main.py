@@ -60,14 +60,18 @@ def print_user_info() -> None:
     通过获取个人信息，验证 vpn、ecard、tgbot 等配置是否正确。
     :return: None
     """
-    ecc.goto_personal_info_page()
-    user_info = ecc.parse_personal_info()
-    logger.info(
-        f'Fetching transactions of current user:\n'
-        f'    Name: {user_info.name}\n'
-        f'    Id: {user_info.id}\n'
-        f'    Role: {user_info.role}\n'
-    )
+    try:
+        ecc.goto_personal_info_page()
+        user_info = ecc.parse_personal_info()
+        logger.info(
+            f'Fetching transactions of current user:\n'
+            f'    Name: {user_info.name}\n'
+            f'    Id: {user_info.id}\n'
+            f'    Role: {user_info.role}\n'
+        )
+        logger.info(f'Bot username: @{tgbot.get_bot_name()}')
+    except:
+        raise AppFatalError('获取个人信息失败')
 
 
 def gc_trans_log(lookup_timedelta_days: int = DEFAULT_ECARD_TIMEDELTA) -> None:
@@ -169,7 +173,6 @@ def server(debug_mode: bool, startup_notify: bool) -> None:
     # 通过获取个人信息，验证 vpn、ecard、tgbot 等配置是否正确
     # 如果配置错误，将无法正确获取个人信息
     print_user_info()
-    logger.info(f'Bot username: @{tgbot.get_bot_name()}')
 
     # 通知用户服务器已运行
     if startup_notify:
